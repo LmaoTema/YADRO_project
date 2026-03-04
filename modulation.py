@@ -22,15 +22,17 @@ class Modulation:
 
         g_t = self.gmsk_filter()
 
-        is_plot_phase = True
-        phi = self.calc_phase(alpha, g_t, is_plot_phase)
+        phi = self.calc_phase(alpha, g_t)
 
-        is_plot_signal = True
-        signal = self.calc_signal(phi, is_plot_signal)
+        signal = self.calc_signal(phi)
 
-        return
+        return alpha, phi, signal
 
     def psk_modulation(self):
+        return
+
+    def gmsk_demodulation(self):
+
         return
 
     # help method
@@ -66,7 +68,7 @@ class Modulation:
 
         return g_t
 
-    def calc_phase(self, alpha, g_t, is_plot):
+    def calc_phase(self, alpha, g_t):
         h = 0.5
         dt = self.dt
         sps = self.sps
@@ -91,21 +93,9 @@ class Modulation:
         # shift to synchronization with the modulation symbol changes
         phi = phi[int(1.5 * sps) : int(1.5 * sps) + alpha_repeat.size]
 
-        if is_plot:
-            t = np.arange(alpha_repeat.size) * dt
-            wind = sps * 10
-            self.plot_2_1(
-                "Bits",
-                "Phase",
-                t[:wind] / self.T,
-                t[:wind] / self.T,
-                alpha_repeat[:wind],
-                phi[:wind],
-            )
-
         return phi
 
-    def calc_signal(self, phi, is_plot):
+    def calc_signal(self, phi):
         dt = self.dt
         Ec = self.Ec
         T = self.T
@@ -116,64 +106,103 @@ class Modulation:
         amplitude = np.sqrt(2 * Ec / T)
         x_t = amplitude * np.cos(2 * np.pi * f_0 * t + phi + phi_0)
 
-        if is_plot:
-            # take another frequency
-            x_plot = amplitude * np.cos(2 * np.pi * 1 / T * t + phi + phi_0)
-
-            wind = 10 * self.sps
-            self.plot_1("Signal", t[:wind] / T, x_plot[:wind])
-
         return x_t
 
-    def plot_1(self, name, range_x, range_y, x="", y=""):
-        plt.figure()
 
-        plt.plot(range_x, range_y, lw=3)
-        plt.title(name, fontsize=20)
-        plt.xlabel(x)
-        plt.ylabel(y)
-        plt.grid()
+def plot_num_subplot(plots_data):
 
-        plt.show()
+    num_plot = len(plots_data)
+    fig = plt.figure()
 
-        return
+    for i in range(num_plot):
+        data = plots_data[i]
+        ax = fig.add_subplot(num_plot, 1, (i + 1))
 
-    def plot_2_1(
-        self,
-        name1,
-        name2,
-        range_x1,
-        range_x2,
-        range_y1,
-        range_y2,
-        x1="",
-        x2="",
-        y1="",
-        y2="",
-    ):
-        fig = plt.figure()
-        ax1 = fig.add_subplot(2, 1, 1)
-        ax2 = fig.add_subplot(2, 1, 2)
+        ax.plot(data["x"], data["y"], c=data.get("color", "r"), lw=data.get("lw", 3))
+        ax.set_title(data.get("title", ""), fontsize=20)
+        ax.set_xlabel(data.get("xlabel", ""))
+        ax.set_ylabel(data.get("ylabel", ""))
 
-        ax1.plot(range_x1, range_y1, lw=3)
-        ax1.set_title(name1, fontsize=20)
-        ax1.set_xlabel(x1)
-        ax1.set_ylabel(y1)
-        ax1.grid()
+        ax.grid()
 
-        ax2.plot(range_x2, range_y2, c="r", lw=3)
-        ax2.set_title(name2, fontsize=20)
-        ax2.set_xlabel(x2)
-        ax2.set_ylabel(y2)
-        ax2.grid()
+    plt.tight_layout()
+    plt.show()
 
-        fig.subplots_adjust(hspace=0.5)
-        plt.show()
-        return
+    return
 
 
 bits = np.random.randint(0, 2, 148)
 params = {"bits": bits}
-mod = Modulation(params)
 
-mod.gmsk_modulation()
+mod = Modulation(params)
+alpha, phi, signal = mod.gmsk_modulation()
+
+# Draw
+is_plot_phase = True
+phase_num_subplot = 3
+
+is_plot_signal = True
+
+if is_plot_phase:
+    sps = mod.sps
+    dt = mod.dt
+    T = mod.T
+
+    alpha_repeat = np.repeat(alpha, sps)
+    t = np.arange(alpha_repeat.size) * dt
+    window = sps * 10
+
+    if phase_num_subplot == 2:
+        plot_data = [
+            {
+                "title": "Alpha",
+                "x": t[:window] / T,
+                "y": alpha_repeat[:window],
+                "color": "b",
+            },
+            {"title": "Phi", "x": t[:window] / T, "y": phi[:window], "color": "r"},
+        ]
+        plot_num_subplot(plot_data)
+
+    elif phase_num_subplot == 3:
+        bits_repeat = np.repeat(bits, sps)
+        plot_data = [
+            {
+                "title": "Bits",
+                "x": t[:window] / T,
+                "y": bits_repeat[:window],
+                "color": "g",
+            },
+            {
+                "title": "Alpha",
+                "x": t[:window] / T,
+                "y": alpha_repeat[:window],
+                "color": "b",
+            },
+            {"title": "Phi", "x": t[:window] / T, "y": phi[:window]},
+        ]
+        plot_num_subplot(plot_data)
+
+if is_plot_signal:
+    sps = mod.sps
+    dt = mod.dt
+    T = mod.T
+    Ec = mod.Ec
+    phi_0 = mod.phi_0
+
+    window = sps * 10
+    t = np.arange(phi.size) * dt
+    f_0 = 1
+
+    amplitude = np.sqrt(2 * Ec / T)
+
+    y = amplitude * np.cos(2 * np.pi * f_0 / T * t + phi + phi_0)
+    plot_data = [
+        {
+            "title": f"Signal, f in time interval = {f_0}",
+            "x": t[:window] / T,
+            "y": y[:window],
+            "color": "r",
+        },
+    ]
+    plot_num_subplot(plot_data)
