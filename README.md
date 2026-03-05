@@ -4,26 +4,26 @@ This project develops an algorithm combining soft decisions from GSM demodulator
 Пояснения к архитектуре проекта: 
 
 # Project/
-# │
-# ├── main.py  - файл для сборки всей системы в едино
-# │
-# ├── core/ - папка для слежбных компоненотов 
-# │   ├── __init__.py
-# │   ├── block.py - класс наследования(обеспечивает единый интерфейс для всех блоков)
-# │   └── pipeline.py - соединяет все блоки в систему передачи
-# │
-# ├── transmitter/ - приёмник 
-# │   ├── __init__.py
-# │   ├── source.py
-# │   ├── channel_coder.py
-# │   ├── interleaver.py
-# │   └── modulator.py
-# │
-# └── receiver/ - передатчик 
-# │   ├── __init__.py
-# │   ├── demodulator.py
-# │   └── decoder.py
-# │
-# └── drawber/ - графики для контроля качества 
-#    ├── __init__.py
-#    └── ber.py
+- │
+- ├── main.py  - файл для сборки всей системы в едино
+- │
+- ├── core/ - папка для слежбных компоненотов 
+- │   ├── __init__.py
+- │   ├── block.py - класс наследования(обеспечивает единый интерфейс для всех блоков)
+- │   └── pipeline.py - соединяет все блоки в систему передачи
+- │
+- ├── transmitter/ - приёмник 
+- │   ├── __init__.py
+- │   ├── source.py
+- │   ├── channel_coder.py
+- │   ├── interleaver.py
+- │   └── modulator.py
+- │
+- └── receiver/ - передатчик 
+- │   ├── __init__.py
+- │   ├── demodulator.py
+- │   └── decoder.py
+- │
+- └── drawber/ - графики для контроля качества 
+-    ├── __init__.py
+-    └── ber.py
