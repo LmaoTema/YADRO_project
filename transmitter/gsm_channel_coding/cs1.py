@@ -3,7 +3,6 @@ from .encoder import ConvolutionalEncoder
 from core.block import Block
 
 class FIRECode:
-
     def __init__(self):
         self.parity_bits = 40
 

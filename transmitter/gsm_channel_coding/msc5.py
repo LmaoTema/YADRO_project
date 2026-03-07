@@ -2,8 +2,8 @@ import numpy as np
 from .encoder import ConvolutionalEncoder
 from .utils import MSC_PARAMS, prepend_last_bits
 
-# Заглушка CRC для MSC-5
-class MSCCRC:
+
+class MSC5CRC:
     def __init__(self, parity_bits):
         self.parity_bits = parity_bits
 
@@ -12,10 +12,10 @@ class MSCCRC:
         parity = [0]*self.parity_bits
         return bits + parity
 
-# Header coder для MSC-5
-class MSCHeaderCoder:
+
+class MSC5HeaderCoder:
     def __init__(self, params):
-        self.crc = MSCCRC(params["header_crc"])
+        self.crc = MSC5CRC(params["header_crc"])
         G = [
             [1,1,1,1,0,1,1],
             [1,0,1,1,0,0,1],
@@ -28,10 +28,8 @@ class MSCHeaderCoder:
         bits = self.crc.encode(bits)
         bits = prepend_last_bits(bits,6)
         coded = self.conv.process(bits[:len(bits)-6])
-        # MSC-5 header не пунктируется по стандарту, оставляем как есть
         return coded
 
-# Data puncturer для MSC-5
 class MCS5DataPuncturer:
     def __init__(self, mode="P1"):
         self.mode = mode
@@ -56,10 +54,9 @@ class MCS5DataPuncturer:
             out.append(b)
         return out
 
-# Data coder для MSC-5
-class MSCDataCoder:
+class MSC5DataCoder:
     def __init__(self, params, cps="P1"):
-        self.crc = MSCCRC(params["data_crc"])
+        self.crc = MSC5CRC(params["data_crc"])
         G = [
             [1,1,1,1,0,1,1],
             [1,0,1,1,0,0,1],
@@ -75,16 +72,15 @@ class MSCDataCoder:
         coded = self.punct.process(coded)
         return coded
 
-# Объединяющий MSC coder для MSC-5
-class MSCCoding:
+class MSC5Coding:
     def __init__(self, scheme, cps="P1"):
         if scheme != "MCS5":
             raise ValueError("MSC-5 coder only")
         params = MSC_PARAMS[scheme]
         self.header_bits = params["header_bits"]
         self.data_bits = params["data_bits"]
-        self.header = MSCHeaderCoder(params)
-        self.data = MSCDataCoder(params, cps)
+        self.header = MSC5HeaderCoder(params)
+        self.data = MSC5DataCoder(params, cps)
         self.scheme = scheme
 
     def process(self, bits):
@@ -92,6 +88,6 @@ class MSCCoding:
         data = bits[self.header_bits:self.header_bits + self.data_bits]
         h = self.header.process(header)
         d = self.data.process(data)
-        # добавляем флаг 8 нулей в конце для MSC-5
+
         mcs_flag = [0]*8
         return h + d + mcs_flag
