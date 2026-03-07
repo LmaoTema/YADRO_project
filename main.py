@@ -5,6 +5,9 @@ from transmitter.gsm_channel_coding.msc1 import MSC1Coding as MSC1Coding
 from transmitter.gsm_channel_coding.msc5 import MSC5Coding as MSC5Coding
 from transmitter.gsm_channel_coding.utils import MSC_PARAMS
 
+from channel.gsm_channel import GSMChannel
+from channel.pdp_profiles import CHANNEL_PROFILES
+
 def main():
     # Пример: генерируем случайные биты
     import numpy as np
@@ -29,6 +32,21 @@ def main():
     print(f"CS-1 output bits: {len(cs1_out)}")
     print(f"MCS-1 output bits: {len(msc1_out)}")
     print(f"MCS-5 output bits: {len(msc5_out)}")
+    
+    # Задаем канал
+    profile = CHANNEL_PROFILES["TU"] 
+    gsm_channel = GSMChannel(profile, fs=10e6, snr_db=20)
+    
+    # Передаем сигнал через канал (нужно до этого bits -> signal)
+    tch_chan = gsm_channel.process(tch_signal)
+    cs1_chan = gsm_channel.process(cs1_signal)
+    msc1_chan = gsm_channel.process(msc1_signal)
+    msc5_chan = gsm_channel.process(msc5_signal)
+
+    print(f"TCH/FS after channel: {len(tch_chan)} samples")
+    print(f"CS-1 after channel: {len(cs1_chan)} samples")
+    print(f"MCS-1 after channel: {len(msc1_chan)} samples")
+    print(f"MCS-5 after channel: {len(msc5_chan)} samples")
 
 if __name__ == "__main__":
     main()
