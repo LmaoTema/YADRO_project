@@ -90,4 +90,4 @@ class MSC5Coding:
         d = self.data.process(data)
 
         mcs_flag = [0]*8
-        return h + d + mcs_flag
+        return np.concatenate([h, d, np.array(mcs_flag)])
