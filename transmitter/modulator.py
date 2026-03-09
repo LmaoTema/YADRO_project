@@ -31,10 +31,6 @@ class GMSKModulation:
         self.dt = self.T / self.sps
         self.h = 1 / 2
 
-        self.f_0 = 5
-        self.Ec = 1
-        self.phi_0 = 0
-
         return
 
     def differential_encoding(self, bits):
@@ -97,14 +93,9 @@ class GMSKModulation:
 
     def calc_signal(self, phi):
         dt = self.dt
-        Ec = self.Ec
-        T = self.T
-        f_0 = self.f_0
-        phi_0 = self.phi_0
 
         t = np.arange(phi.size) * dt
-        amplitude = np.sqrt(2 * Ec / T)
-        x_t = amplitude * np.cos(2 * np.pi * f_0 * t + phi + phi_0)
+        x_t = np.exp(1j * phi)
 
         return x_t
 
