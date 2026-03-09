@@ -101,4 +101,8 @@ class MSC1Coding:
         data = bits[self.header_bits:self.header_bits + self.data_bits]
         h = self.header.process(header)
         d = self.data.process(data)
-        return h + d
+        
+        coded = h + d
+        coded = coded + [0]*4
+        
+        return coded 

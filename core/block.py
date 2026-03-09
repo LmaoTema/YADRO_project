@@ -1,4 +1,3 @@
-# core/block.py
 
 class Block:
     def process(self, bits):

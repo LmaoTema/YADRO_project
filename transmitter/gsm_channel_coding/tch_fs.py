@@ -1,4 +1,4 @@
-import numpy as np
+
 from core.block import Block
 from .encoder import ConvolutionalEncoder
 

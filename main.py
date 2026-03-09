@@ -1,52 +1,75 @@
-from core.pipeline import Pipeline
-from transmitter.gsm_channel_coding.tch_fs import TCHFSBlockCoder
-from transmitter.gsm_channel_coding.cs1 import CS1BlockCoder
-from transmitter.gsm_channel_coding.msc1 import MSC1Coding as MSC1Coding
-from transmitter.gsm_channel_coding.msc5 import MSC5Coding as MSC5Coding
-from transmitter.gsm_channel_coding.utils import MSC_PARAMS
+import numpy as np
 
-from channel.gsm_channel import GSMChannel
-from channel.pdp_profiles import CHANNEL_PROFILES
+from core.pipeline import Pipeline
+from transmitter.gsm_channel_coding.utils import MSC_PARAMS
+from transmitter.gsm_channel_coding.tch_fs import TCHFSBlockCoder
+from transmitter.interleaver.cstch import SpeechInterleaver
+
+from transmitter.gsm_channel_coding.cs1 import CS1BlockCoder
+from transmitter.interleaver.cstch import SpeechInterleaver as CS1Interleaver
+
+from transmitter.gsm_channel_coding.msc1 import MSC1Coding
+from transmitter.interleaver.msc_1 import MCS1Interleaver
+
+from transmitter.gsm_channel_coding.msc5 import MSC5Coding
+from transmitter.interleaver.msc_5 import MCS5Interleaver
+
+
+def get_pipeline(channel_type):
+    """
+    channel_type: 'TCHFS', 'CS1', 'MCS1', 'MCS5'
+    """
+    if channel_type == 'TCHFS':
+        return Pipeline([
+            TCHFSBlockCoder(),
+            SpeechInterleaver()
+        ])
+    elif channel_type == 'CS1':
+        return Pipeline([
+            CS1BlockCoder(),
+            CS1Interleaver()
+        ])
+    elif channel_type == 'MCS1':
+        return Pipeline([
+            MSC1Coding("MCS1"),
+            MCS1Interleaver()
+        ])
+    elif channel_type == 'MCS5':
+        return Pipeline([
+            MSC5Coding("MCS5"),
+            MCS5Interleaver()
+        ])
+    else:
+        raise ValueError(f"Unknown channel type: {channel_type}")
 
 def main():
-    # Пример: генерируем случайные биты
-    import numpy as np
-    tch_bits = np.random.randint(0, 2, 260).tolist()
-    cs1_bits = np.random.randint(0, 2, 184).tolist()
-    msc1_bits = np.random.randint(0, 2, MSC_PARAMS["MCS1"]["header_bits"] + MSC_PARAMS["MCS1"]["data_bits"]).tolist()
-    msc5_bits = np.random.randint(0, 2, MSC_PARAMS["MCS5"]["header_bits"] + MSC_PARAMS["MCS5"]["data_bits"]).tolist()
 
-    # Кодируем
-    tch_coder = TCHFSBlockCoder()
-    cs1_coder = CS1BlockCoder()
-    msc1_coder = MSC1Coding("MCS1")
-    msc5_coder = MSC5Coding("MCS5")
+   
+    channel_type = "MCS5"  #  'CS1', 'MCS1', 'MCS5'
 
-    tch_out = tch_coder.process(tch_bits)
-    cs1_out = cs1_coder.process(cs1_bits)
-    msc1_out = msc1_coder.process(msc1_bits)
-    msc5_out = msc5_coder.process(msc5_bits)
+    if channel_type == "TCHFS":
+        bits = np.random.randint(0, 2, 260).tolist()
+    elif channel_type == "CS1":
+        bits = np.random.randint(0, 2, 184).tolist()
+    elif channel_type == "MCS1":
+        # например MSC1_PARAMS['header_bits'] + MSC1_PARAMS['data_bits']
+        bits = np.random.randint(0, 2, MSC_PARAMS["MCS1"]["header_bits"] + MSC_PARAMS["MCS1"]["data_bits"]).tolist()
+    elif channel_type == "MCS5":
+        bits = np.random.randint(0, 2, MSC_PARAMS["MCS5"]["header_bits"] + MSC_PARAMS["MCS5"]["data_bits"]).tolist()
 
-    # Вывод размеров
-    print(f"TCH/FS output bits: {len(tch_out)}")
-    print(f"CS-1 output bits: {len(cs1_out)}")
-    print(f"MCS-1 output bits: {len(msc1_out)}")
-    print(f"MCS-5 output bits: {len(msc5_out)}")
-    
-    # Задаем канал
-    profile = CHANNEL_PROFILES["TU"] 
-    gsm_channel = GSMChannel(profile, fs=10e6, snr_db=20)
-    
-    # Передаем сигнал через канал (нужно до этого bits -> signal)
-    tch_chan = gsm_channel.process(tch_signal)
-    cs1_chan = gsm_channel.process(cs1_signal)
-    msc1_chan = gsm_channel.process(msc1_signal)
-    msc5_chan = gsm_channel.process(msc5_signal)
 
-    print(f"TCH/FS after channel: {len(tch_chan)} samples")
-    print(f"CS-1 after channel: {len(cs1_chan)} samples")
-    print(f"MCS-1 after channel: {len(msc1_chan)} samples")
-    print(f"MCS-5 after channel: {len(msc5_chan)} samples")
+    pipeline = get_pipeline(channel_type)
+
+    bursts = pipeline.run(bits)
+
+    print(f"Channel type: {channel_type}")
+    print("Number of bursts:", len(bursts))
+    print("Burst length:", len(bursts[0]))
+
+    for i, burst in enumerate(bursts, 1):
+        print(f"\nBurst {i}:")
+        print(burst)
+
 
 if __name__ == "__main__":
     main()
