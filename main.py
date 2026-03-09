@@ -8,6 +8,9 @@ from transmitter.gsm_channel_coding.utils import MSC_PARAMS
 from channel.gsm_channel import GSMChannel
 from channel.pdp_profiles import CHANNEL_PROFILES
 
+from receiver.equalizer import ZFEqualizer
+
+
 def main():
     # Пример: генерируем случайные биты
     import numpy as np
@@ -37,6 +40,8 @@ def main():
     profile = CHANNEL_PROFILES["TU"] 
     gsm_channel = GSMChannel(profile, fs=10e6, snr_db=20)
     
+    equalizer = ZFEqualizer()
+    
     # Передаем сигнал через канал (нужно до этого bits -> signal)
     tch_chan = gsm_channel.process(tch_signal)
     cs1_chan = gsm_channel.process(cs1_signal)
@@ -47,6 +52,17 @@ def main():
     print(f"CS-1 after channel: {len(cs1_chan)} samples")
     print(f"MCS-1 after channel: {len(msc1_chan)} samples")
     print(f"MCS-5 after channel: {len(msc5_chan)} samples")
+    
+    # Эквализация
+    tch_eq = equalizer.process(tch_chan)
+    cs1_eq = equalizer.process(cs1_chan)
+    msc1_eq = equalizer.process(msc1_chan)
+    msc5_eq = equalizer.process(msc5_chan)
+    
+    print(f"TCH/FS after equalizer: {len(tch_eq)} samples")
+    print(f"CS-1 after equalizer: {len(cs1_eq)} samples")
+    print(f"MCS-1 after equalizer: {len(msc1_eq)} samples")
+    print(f"MCS-5 after equalizer: {len(msc5_eq)} samples")
 
 if __name__ == "__main__":
     main()
