@@ -10,7 +10,7 @@ class ChannelCoder(Block):
 
     def __init__(self, scheme):
 
-        if scheme == "TCH_FS":
+        if scheme == "TCHFS":
 
             self.coder = TCHFSBlockCoder()
 

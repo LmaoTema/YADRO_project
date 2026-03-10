@@ -5,7 +5,7 @@ from core.block import Block
 class Modulation(Block):
     def __init__(self, scheme):
 
-        if scheme in ["TCH_FS", "CS1", "MCS1"]:
+        if scheme in ["TCHFS", "CS1", "MCS1"]:
 
             self.modulator = GMSKModulation()
 

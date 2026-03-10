@@ -22,7 +22,7 @@ class SpeechInterleaver(Interleaver):
     def process(self, bits):
         if len(bits) != 456:
             raise ValueError("Expected 456 bits")
-        print("Input bits:", len(bits))
+        #print("Input bits:", len(bits))
         subblocks = [bits[i*57:(i+1)*57] for i in range(8)]
 
         if len(subblocks) != 8:

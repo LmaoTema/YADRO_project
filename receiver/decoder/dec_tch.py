@@ -93,7 +93,7 @@ class TCHFSSpeechDecoder(Block):
     def __init__(self):
 
         self.deint = SpeechDeinterleaver()
-        self.viterbi = ViterbiDecoder()
+        self.viterbi = self.viterbi = ViterbiDecoder(constraint_length=5,polynomials=[0x19, 0x1D])
         self.crc = CRC5350Decoder()
 
     def reverse_reordering(self, u):

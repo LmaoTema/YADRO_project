@@ -14,6 +14,9 @@ from transmitter.interleaver.msc_1 import MCS1Interleaver
 from transmitter.gsm_channel_coding.msc5 import MSC5Coding
 from transmitter.interleaver.msc_5 import MCS5Interleaver
 
+from channel.gsm_channel import GSMChannel
+from channel.pdp_profiles import CHANNEL_PROFILES
+
 from transmitter.modulator import Modulation
 from receiver.demodulator import Demodulation
 
@@ -39,69 +42,68 @@ def get_pipeline(channel_type):
 def main():
 
     channel_type = "TCHFS"
-
-    # Создание случайного кадра
-    if channel_type == "TCHFS":
-        bits = np.random.randint(0, 2, 260).tolist()
-    elif channel_type == "CS1":
-        bits = np.random.randint(0, 2, 184).tolist()
-    elif channel_type == "MCS1":
-        bits = np.random.randint(0, 2,
-                                 MSC_PARAMS["MCS1"]["header_bits"] +
-                                 MSC_PARAMS["MCS1"]["data_bits"]).tolist()
-    elif channel_type == "MCS5":
-        bits = np.random.randint(0, 2,
-                                 MSC_PARAMS["MCS5"]["header_bits"] +
-                                 MSC_PARAMS["MCS5"]["data_bits"]).tolist()
-
-
-    if channel_type == "TCHFS":
-        decoder = TCHFSSpeechDecoder()
-    elif channel_type == "CS1":
-        decoder = CS1BlockDecoder()
-    elif channel_type == "MCS1":
-        decoder = MSC1BlockDecoder()
-    elif channel_type == "MCS5":
-        decoder = MSC5BlockDecoder()
-    else:
-        raise ValueError(f"Unknown channel type: {channel_type}")
-
+    profile = CHANNEL_PROFILES["TU"]
+    
     pipeline = get_pipeline(channel_type)
-    bursts = pipeline.run(bits)
 
     modulator = Modulation(channel_type)
     demodulator = Demodulation(channel_type)
+    
 
-    # Создаём объект для подсчёта BER
-    ber_ruler = BERRuler(h2dB_init=0, log_language="English")
+    if channel_type == "TCHFS":
+        decoder = TCHFSSpeechDecoder()
+        frame_bits = 260
+    elif channel_type == "CS1":
+        decoder = CS1BlockDecoder()
+        frame_bits = 184
+    elif channel_type == "MCS1":
+        decoder = MSC1BlockDecoder()
+        frame_bits = MSC_PARAMS["MCS1"]["header_bits"] + MSC_PARAMS["MCS1"]["data_bits"]
+    elif channel_type == "MCS5":
+        decoder = MSC5BlockDecoder()
+        frame_bits = MSC_PARAMS["MCS5"]["header_bits"] + MSC_PARAMS["MCS5"]["data_bits"]
+    else:
+        raise ValueError("Unknown channel")
+    
+    ber_ruler = BERRuler(h2dB_init=0, h2dB_max=10)
 
     print(f"Channel type: {channel_type}")
-    print("Number of bursts:", len(bursts))
-    print("Burst length:", len(bursts[0]))
 
-    all_rx_bits = []
+    for snr_db in range(0, 11):
 
-    for i, burst in enumerate(bursts, 1):
-        tx_bits_burst = np.array(burst)
+        print("\n==============================")
+        print(f"SNR = {snr_db} dB")
+        print("==============================")
 
-        signal = modulator.process(tx_bits_burst)
-
-        # Канал + демодуляция
-        rx_bits_burst = demodulator.process(signal)
+        ber_ruler.h2dB = snr_db
+        ber_ruler.reset()
+        channel = GSMChannel(profile, snr_db)
         
-        decoded_bits = decoder.process(rx_bits_burst)
-        
-        # Добавляем для BER
-        ber_ruler.update_frame(tx_bits_burst, decoded_bits)
+        while ber_ruler.NumTrFrames < 500:
 
-        all_rx_bits.append(decoded_bits)
+            bits = np.random.randint(0, 2, frame_bits).tolist()
 
-    print("\nFinal BER:", ber_ruler.BERs[-1])
-    print("Final FER:", ber_ruler.FERs[-1])
+            bursts = pipeline.run(bits)
 
-  
-    return ber_ruler.h2dBs, ber_ruler.BERs, ber_ruler.FERs
+            tx_bursts = [np.array(b) for b in bursts]
 
+            signals = [modulator.process(b) for b in tx_bursts]
+
+            rx_signals = [channel.process(s) for s in signals]
+
+            rx_bursts = [demodulator.process(s) for s in rx_signals]
+
+            decoded_bits = decoder.process(rx_bursts)
+
+            ber_ruler.update_frame(np.array(bits), np.array(decoded_bits))
+
+        ber_ruler.finalize_point()
+
+    snr, ber, fer = ber_ruler.get_results()
+
+    plot_ber(snr, ber, fer)
+
+    return snr, ber, fer
 
 if __name__ == "__main__":
     main()

@@ -4,7 +4,7 @@ from core.block import Block
 
 class GSMChannel(Block):
 
-    def __init__(self, profile, fs=270833, snr_db=20):
+    def __init__(self, profile, snr_db, fs=270833, ):
 
 
         self.delays = profile["delays"]
@@ -53,12 +53,15 @@ class GSMChannel(Block):
 
 
         # Генерируем импульсную характеристику канала
-        h = self._generate_impulse_response()
+       # h = self._generate_impulse_response()
 
         # Суммируем все отраженные лучи (используем свертку)
-        output = np.convolve(signal, h, mode='same')
+        #output = np.convolve(signal, h, mode='same')
 
         # Добавляем шум
-        output = self._add_awgn(output)
-
+        #output = self._add_awgn(output)
+        
+        # AWGN
+        output = self._add_awgn(signal) 
+        
         return output
