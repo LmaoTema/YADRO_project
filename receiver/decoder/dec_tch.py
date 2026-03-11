@@ -7,6 +7,7 @@ class SpeechDeinterleaver(Block):
 
     def __init__(self):
         pass
+            
 
     def deinterleave_57(self, data):
 
@@ -65,6 +66,7 @@ def reverse_reordering(u):
 class CRC5350Decoder:
 
     def __init__(self):
+        self.crc_errors = 0 
         self.poly = [1,0,1,1]
 
     def check(self, bits):
@@ -84,7 +86,7 @@ class CRC5350Decoder:
         data = bits[:50]
 
         if not self.check(bits):
-            print("CRC error")
+            self.crc_errors += 1
 
         return data
     

@@ -1,7 +1,7 @@
 import numpy as np
 
 from core.pipeline import Pipeline
-from transmitter.gsm_channel_coding.utils import MSC_PARAMS
+from config import SIMULATION, CHANNEL, MODULATION, CHANNEL_MODES, BER, DECODER_CLASSES
 from transmitter.gsm_channel_coding.tch_fs import TCHFSBlockCoder
 from transmitter.interleaver.cstch import SpeechInterleaver
 
@@ -41,49 +41,31 @@ def get_pipeline(channel_type):
 
 def main():
 
-    channel_type = "TCHFS"
-    profile = CHANNEL_PROFILES["TU"]
+    channel_type = SIMULATION["channel_type"]
+    profile = CHANNEL["profile"]
     
     pipeline = get_pipeline(channel_type)
 
     modulator = Modulation(channel_type)
     demodulator = Demodulation(channel_type)
     
-
-    if channel_type == "TCHFS":
-        decoder = TCHFSSpeechDecoder()
-        frame_bits = 260
-    elif channel_type == "CS1":
-        decoder = CS1BlockDecoder()
-        frame_bits = 184
-    elif channel_type == "MCS1":
-        decoder = MSC1BlockDecoder()
-        frame_bits = MSC_PARAMS["MCS1"]["header_bits"] + MSC_PARAMS["MCS1"]["data_bits"]
-    elif channel_type == "MCS5":
-        decoder = MSC5BlockDecoder()
-        frame_bits = MSC_PARAMS["MCS5"]["header_bits"] + MSC_PARAMS["MCS5"]["data_bits"]
-    else:
-        raise ValueError("Unknown channel")
+    mode_cfg = CHANNEL_MODES[channel_type]
+    decoder_class = DECODER_CLASSES[mode_cfg["decoder"]]
+    decoder = decoder_class()
+    frame_bits = mode_cfg["frame_bits"]
     
-    ber_ruler = BERRuler(h2dB_init=0, h2dB_max=10)
+    ber_ruler = BERRuler(**BER)
 
-    print(f"Channel type: {channel_type}")
+    while not ber_ruler.isStop:
 
-    for snr_db in range(0, 11):
-
-        print("\n==============================")
-        print(f"SNR = {snr_db} dB")
-        print("==============================")
-
-        ber_ruler.h2dB = snr_db
-        ber_ruler.reset()
+        snr_db = ber_ruler.h2dB 
         channel = GSMChannel(profile, snr_db)
-        
-        while ber_ruler.NumTrFrames < 500:
 
-            bits = np.random.randint(0, 2, frame_bits).tolist()
+        while not ber_ruler.is_point_finished():
 
-            bursts = pipeline.run(bits)
+            bits = np.random.randint(0, 2, frame_bits)
+
+            bursts = pipeline.run(bits.tolist())
 
             tx_bursts = [np.array(b) for b in bursts]
 
@@ -95,7 +77,7 @@ def main():
 
             decoded_bits = decoder.process(rx_bursts)
 
-            ber_ruler.update_frame(np.array(bits), np.array(decoded_bits))
+            ber_ruler.update_frame(bits, decoded_bits)
 
         ber_ruler.finalize_point()
 
