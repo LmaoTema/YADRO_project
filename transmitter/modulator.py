@@ -37,7 +37,7 @@ class GMSKModulation:
         # if bits.size % 148 != 0:
         #     raise ValueError("Количество модуляционных бит должно быть кратным 148")
 
-        d_prev = np.ones(bits.size)
+        d_prev = np.ones(bits.size, dtype=int)
         d_prev[1:] = bits[:-1]
 
         d_curr = bits ^ d_prev

@@ -41,7 +41,7 @@ class GMSKDemodulator(Block):
         alpha = np.ones(delta_phi.size)
         alpha[delta_phi <= 0] = -1
 
-        d_curr = (1 - alpha) / 2
+        d_curr = ((1 - alpha) / 2).astype(int)
 
         bits = np.zeros(148, dtype=int)
         d_prev = 1
