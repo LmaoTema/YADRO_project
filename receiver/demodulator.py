@@ -46,7 +46,7 @@ class GMSKDemodulator(Block):
         bits = np.zeros(148, dtype=int)
         d_prev = 1
         for i in range(148):
-            bits[i] = (d_curr[i] + d_prev) % 2
+            bits[i] = d_curr[i] ^ d_prev
             d_prev = bits[i]
 
         return bits

@@ -40,7 +40,7 @@ class GMSKModulation:
         d_prev = np.ones(bits.size)
         d_prev[1:] = bits[:-1]
 
-        d_curr = (bits + d_prev) % 2
+        d_curr = bits ^ d_prev
         alpha = 1 - 2 * d_curr
 
         return alpha
