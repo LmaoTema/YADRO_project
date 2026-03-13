@@ -4,15 +4,15 @@ from core.block import Block
 
 
 class Demodulation(Block):
-    def __init__(self, scheme):
+    def __init__(self, scheme, params):
 
         if scheme in ["TCHFS", "CS1", "MCS1"]:
 
-            self.demodulator = GMSKDemodulator()
+            self.demodulator = GMSKDemodulator(params)
 
         elif scheme == "MCS5":
 
-            self.demodulator = PSKDemodulator()
+            self.demodulator = PSKDemodulator(params)
 
         else:
 
@@ -24,8 +24,14 @@ class Demodulation(Block):
 
 
 class GMSKDemodulator(Block):
-    def __init__(self):
-        self.sps = 100
+    def __init__(self, params):
+        self.BT = params.get("BT", 0.3)
+        self.T = params.get("T", 1)
+        self.sps = params.get("sps", 100)
+        self.dt = self.T / self.sps
+        self.h = params.get("h", 0.5)
+        self.gaus_duration = params.get("gaus_durationT", 4)
+        self.rect_duration = params.get("rect_duration", 1)
 
     def process(self, complex_signal):
 
@@ -53,7 +59,7 @@ class GMSKDemodulator(Block):
 
 
 class PSKDemodulator(Block):
-    def __init__(self):
+    def __init__(self, params):
         pass
 
     def process(self, signal):

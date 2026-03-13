@@ -46,8 +46,9 @@ def main():
     
     pipeline = get_pipeline(channel_type)
 
-    modulator = Modulation(channel_type)
-    demodulator = Demodulation(channel_type)
+    params_modulation = MODULATION
+    modulator = Modulation(channel_type, params_modulation)
+    demodulator = Demodulation(channel_type, params_modulation)
     
     mode_cfg = CHANNEL_MODES[channel_type]
     decoder_class = DECODER_CLASSES[mode_cfg["decoder"]]

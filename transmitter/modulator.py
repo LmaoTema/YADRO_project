@@ -3,15 +3,15 @@ from core.block import Block
 
 
 class Modulation(Block):
-    def __init__(self, scheme):
+    def __init__(self, scheme, params):
 
         if scheme in ["TCHFS", "CS1", "MCS1"]:
 
-            self.modulator = GMSKModulation()
+            self.modulator = GMSKModulation(params)
 
         elif scheme == "MCS5":
 
-            self.modulator = PSKModulation()
+            self.modulator = PSKModulation(params)
 
         else:
 
@@ -24,12 +24,14 @@ class Modulation(Block):
 
 class GMSKModulation:
 
-    def __init__(self):
-        self.BT = 0.3
-        self.T = 1
-        self.sps = 100
+    def __init__(self, params):
+        self.BT = params.get("BT", 0.3)
+        self.T = params.get("T", 1)
+        self.sps = params.get("sps", 100)
         self.dt = self.T / self.sps
-        self.h = 1 / 2
+        self.h = params.get("h", 0.5)
+        self.gaus_duration = params.get("gaus_durationT", 4)
+        self.rect_duration = params.get("rect_duration", 1)
 
         return
 
@@ -49,11 +51,13 @@ class GMSKModulation:
         BT = self.BT
         T = self.T
         dt = self.dt
+        gaus_duration = self.gaus_duration
+        rect_duration = self.rect_duration
 
         delta = np.sqrt(np.log(2)) / (2 * np.pi * BT)
 
-        t_h = np.arange(-1.5 * T, 1.5 * T, dt)
-        t_rect = np.arange(-0.5 * T, 0.5 * T, dt)
+        t_h = np.arange(-gaus_duration / 2 * T, gaus_duration / 2 * T, dt)
+        t_rect = np.arange(-rect_duration / 2 * T, rect_duration / 2 * T, dt)
 
         h_t = np.exp(-(t_h**2) / (2 * (delta**2) * (T**2))) / (
             np.sqrt(2 * np.pi) * delta * T
@@ -68,6 +72,8 @@ class GMSKModulation:
         h = self.h
         dt = self.dt
         sps = self.sps
+        gaus_duration = self.gaus_duration
+        rect_duration = self.rect_duration
 
         alpha_repeat = np.repeat(alpha, sps)
 
@@ -87,7 +93,9 @@ class GMSKModulation:
             phi[start_idx + q_gmsk.size :] += phase_step
 
         # shift to synchronization with the modulation symbol changes
-        phi = phi[int(1.5 * sps) : int(1.5 * sps) + alpha_repeat.size]
+        # an additional shift of 0.5 need to move to the center of the bit 
+        shift = (gaus_duration + rect_duration) / 2 + 0.5
+        phi = phi[int(shift * sps) : int(shift * sps) + alpha_repeat.size]
 
         return phi
 
@@ -113,5 +121,5 @@ class GMSKModulation:
 
 
 class PSKModulation:
-    def __init__(self):
+    def __init__(self, params):
         raise ValueError("Еще не реализован")
