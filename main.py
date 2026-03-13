@@ -74,7 +74,7 @@ def main():
 
             rx_signals = [channel.process(s) for s in signals]
 
-            rx_bursts = [demodulator.process(s) for s in rx_signals]
+            rx_bursts = [demodulator.process(s, params_modulation) for s in rx_signals]
 
             decoded_bits = decoder.process(rx_bursts)
 

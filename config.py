@@ -60,7 +60,8 @@ MODULATION = {
     "sps": 100,
     "h": 0.5,
     "gaus_duration": 4,
-    "rect_duration": 1
+    "rect_duration": 1,
+    "type_demod": "diff_phase" # vit_soft
 }
 
 CHANNEL = {
