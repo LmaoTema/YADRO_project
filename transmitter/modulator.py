@@ -30,7 +30,7 @@ class GMSKModulation:
         self.sps = params.get("sps", 100)
         self.dt = self.T / self.sps
         self.h = params.get("h", 0.5)
-        self.gaus_duration = params.get("gaus_durationT", 4)
+        self.gaus_duration = params.get("gaus_duration", 4)
         self.rect_duration = params.get("rect_duration", 1)
 
         return
@@ -62,7 +62,7 @@ class GMSKModulation:
         h_t = np.exp(-(t_h**2) / (2 * (delta**2) * (T**2))) / (
             np.sqrt(2 * np.pi) * delta * T
         )
-        rect = t_rect * 0 + 1 / T
+        rect = np.ones(t_rect.size) / T
 
         g_t = np.convolve(h_t, rect) * dt
 
@@ -94,7 +94,7 @@ class GMSKModulation:
 
         # shift to synchronization with the modulation symbol changes
         # an additional shift of 0.5 need to move to the center of the bit 
-        shift = (gaus_duration + rect_duration) / 2 + 0.5
+        shift = (gaus_duration + rect_duration) / 2 - 0.5
         phi = phi[int(shift * sps) : int(shift * sps) + alpha_repeat.size]
 
         return phi

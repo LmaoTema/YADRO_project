@@ -30,7 +30,7 @@ class GMSKDemodulator(Block):
         self.sps = params.get("sps", 100)
         self.dt = self.T / self.sps
         self.h = params.get("h", 0.5)
-        self.gaus_duration = params.get("gaus_durationT", 4)
+        self.gaus_duration = params.get("gaus_duration", 4)
         self.rect_duration = params.get("rect_duration", 1)
 
     def process(self, complex_signal):
