@@ -4,8 +4,8 @@ from core.block import Block
 
 class GSMChannel(Block):
 
-    def __init__(self, profile, snr_db, fs=270833, ):
-
+    def __init__(self, profile, snr_db, fs=270833, is_working=False):
+        super().__init__(is_working)
 
         self.delays = profile["delays"]
         self.powers_db = profile["powers_db"]
@@ -49,8 +49,10 @@ class GSMChannel(Block):
 
         return signal + noise
 
-    def process(self, signal):
+    def _process(self, signal):
 
+        if not getattr(self, "is_working", True):
+            return np.array(signal, copy=True, dtype=complex)  
 
         # Генерируем импульсную характеристику канала
        # h = self._generate_impulse_response()

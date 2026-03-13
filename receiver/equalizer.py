@@ -4,9 +4,8 @@ from core.block import Block
 
 class ZFEqualizer(Block):
 
-    def __init__(self, channel_len=5):
-        super().__init__()
-
+    def __init__(self, channel_len=5, is_working=True):
+        super().__init__(is_working)
         self.L = channel_len
 
         self.train_start = 61
@@ -38,8 +37,11 @@ class ZFEqualizer(Block):
 
         return s
 
-    def process(self, burst):
+    def _process(self, burst):
 
+        if not getattr(self, "is_working", True):
+            return np.array(burst, copy=True)
+        
         burst = np.array(burst)
 
         rx_train = burst[self.train_start:self.train_end]

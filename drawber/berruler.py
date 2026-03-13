@@ -11,15 +11,15 @@ class BERRuler:
         h2dB_min_step=0.1,
         h2dB_max_step=1.6,
         h2dB_max=15,
-        MinBER=1e-4,
-        MinFER=1,
-        MinNumErBits=500,
-        MinNumErFrames=100,
-        MinNumTrFrames=100,
-        MaxNumTrBits=1e8,
-        MaxNumTrFrames=np.inf,
-        MaxBERRate=5,
-        MinBERRate=2,
+        min_BER=1e-4,
+        min_FER=1,
+        min_NumErBits=500,
+        min_NumErFrames=100,
+        min_NumTrFrames=100,
+        max_NumTrBits=1e8,
+        max_NumTrFrames=np.inf,
+        max_BERRate=5,
+        min_BERRate=2,
         log_language="Russian",
     ):
 
@@ -31,18 +31,18 @@ class BERRuler:
         self.h2dBMaxStep = h2dB_max_step
         self.h2dBMax = h2dB_max
 
-        self.MinBER = MinBER
-        self.MinFER = MinFER
+        self.MinBER = min_BER
+        self.MinFER = min_FER
 
-        self.MinNumErBits = MinNumErBits
-        self.MinNumErFrames = MinNumErFrames
-        self.MinNumTrFrames = MinNumTrFrames
+        self.MinNumErBits = min_NumErBits
+        self.MinNumErFrames = min_NumErFrames
+        self.MinNumTrFrames = min_NumTrFrames
 
-        self.MaxNumTrBits = MaxNumTrBits
-        self.MaxNumTrFrames = MaxNumTrFrames
+        self.MaxNumTrBits = max_NumTrBits
+        self.MaxNumTrFrames = max_NumTrFrames
 
-        self.MaxBERRate = MaxBERRate
-        self.MinBERRate = MinBERRate
+        self.MaxBERRate = max_BERRate
+        self.MinBERRate = min_BERRate
 
         self.log_language = log_language
 

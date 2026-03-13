@@ -8,8 +8,10 @@ from core.block import Block
     # main class for channnel coding logic
 class ChannelCoder(Block):
 
-    def __init__(self, scheme):
-
+    def __init__(self, scheme, is_working=False):
+        
+        super().__init__(is_working)
+        
         if scheme == "TCHFS":
 
             self.coder = TCHFSBlockCoder()
@@ -30,6 +32,6 @@ class ChannelCoder(Block):
 
             raise ValueError("Unknown scheme")
 
-    def process(self, bits):
-
+    def _process(self, bits):
+        #print(len(bits))
         return self.coder.process(bits)

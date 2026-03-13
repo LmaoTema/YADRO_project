@@ -1,9 +1,8 @@
 import numpy as np
-from core.block import Block
 
 from .viterbi_uni import ViterbiDecoder
 
-class SpeechDeinterleaver(Block):
+class SpeechDeinterleaver:
 
     def __init__(self):
         pass
@@ -90,10 +89,10 @@ class CRC5350Decoder:
 
         return data
     
-class TCHFSSpeechDecoder(Block):
+class TCHFSSpeechDecoder:
 
     def __init__(self):
-
+ 
         self.deint = SpeechDeinterleaver()
         self.viterbi = self.viterbi = ViterbiDecoder(constraint_length=5,polynomials=[0x19, 0x1D])
         self.crc = CRC5350Decoder()
@@ -119,6 +118,9 @@ class TCHFSSpeechDecoder(Block):
 
 
     def process(self, bursts):
+        
+        if not getattr(self, "is_working", True):
+            return np.array([b for burst in bursts for b in burst], dtype=int)
 
         bits456 = self.deint.process(bursts)
 

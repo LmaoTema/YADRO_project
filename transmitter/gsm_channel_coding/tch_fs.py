@@ -28,6 +28,8 @@ class TCHFSBlockCoder:
         self.conv = ConvolutionalEncoder(G, 5)  
 
     def process(self, bits):
+        if not getattr(self, "is_working", True):
+            return bits.copy()
         if len(bits) != 260:
             raise ValueError("TCH/FS frame must be 260 bits")
 

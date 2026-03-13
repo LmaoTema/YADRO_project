@@ -1,7 +1,6 @@
 import numpy as np
-from .base import Interleaver
 
-class SpeechInterleaver(Interleaver):
+class SpeechInterleaver:
     def __init__(self, bursts=8):
         if bursts != 8:
             raise ValueError("SpeechInterleaver expects 4 bursts per block")
@@ -20,6 +19,10 @@ class SpeechInterleaver(Interleaver):
     
     
     def process(self, bits):
+        
+        if not getattr(self, "is_working", True):
+            return np.array.bits
+        
         if len(bits) != 456:
             raise ValueError("Expected 456 bits")
         #print("Input bits:", len(bits))

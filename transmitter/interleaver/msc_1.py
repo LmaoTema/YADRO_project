@@ -1,7 +1,7 @@
 import numpy as np
-from .base import Interleaver
 
-class MCS1Interleaver(Interleaver):
+
+class MCS1Interleaver:
     def __init__(self, bursts=4):
         self.bursts = bursts
         if bursts != 4:

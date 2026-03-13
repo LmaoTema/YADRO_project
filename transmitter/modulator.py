@@ -3,8 +3,9 @@ from core.block import Block
 
 
 class Modulation(Block):
-    def __init__(self, scheme):
-
+    def __init__(self, scheme, is_working=False):
+        super().__init__(is_working)
+        
         if scheme in ["TCHFS", "CS1", "MCS1"]:
 
             self.modulator = GMSKModulation()
@@ -17,7 +18,7 @@ class Modulation(Block):
 
             raise ValueError("Unknown scheme")
 
-    def process(self, bits):
+    def _process(self, bits):
 
         return self.modulator.process(bits)
 
@@ -100,6 +101,9 @@ class GMSKModulation:
         return x_t
 
     def process(self, bits):
+        
+        if not getattr(self, "is_working", True):
+             return np.array(bits, dtype=complex)
 
         alpha = self.differential_encoding(bits)
 

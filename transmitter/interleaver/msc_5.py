@@ -1,7 +1,7 @@
 import numpy as np
-from .base import Interleaver
 
-class MCS5Interleaver(Interleaver):
+
+class MCS5Interleaver:
     def __init__(self):
         self.training_seq = np.array([0,0,1,0,1,1,0,1,1,1,0,1,1,1,1,0,0,0,1,0,1,1,0,1,1,1], dtype=int)
         self.tail_bits = np.zeros(3, dtype=int)

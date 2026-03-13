@@ -4,8 +4,9 @@ from core.block import Block
 
 
 class Demodulation(Block):
-    def __init__(self, scheme):
-
+    def __init__(self, scheme, is_working=True):
+        super().__init__(is_working)
+        
         if scheme in ["TCHFS", "CS1", "MCS1"]:
 
             self.demodulator = GMSKDemodulator()
@@ -18,7 +19,7 @@ class Demodulation(Block):
 
             raise ValueError("Unknown scheme")
 
-    def process(self, signal):
+    def _process(self, signal):
 
         return self.demodulator.process(signal)
 
@@ -28,7 +29,10 @@ class GMSKDemodulator(Block):
         self.sps = 100
 
     def process(self, complex_signal):
-
+        
+        if not getattr(self, "is_working", True):
+            return np.array(complex_signal, copy=True)
+        
         sample_indices = np.arange(148) * self.sps + int(self.sps / 2)
         y_k = complex_signal[sample_indices]
 

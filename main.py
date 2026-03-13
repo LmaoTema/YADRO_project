@@ -1,72 +1,61 @@
 import numpy as np
 
 from core.pipeline import Pipeline
-from config import SIMULATION, CHANNEL, MODULATION, CHANNEL_MODES, BER, DECODER_CLASSES
-from transmitter.gsm_channel_coding.tch_fs import TCHFSBlockCoder
-from transmitter.interleaver.cstch import SpeechInterleaver
+from config import SIMULATION, CHANNEL, CHANNEL_MODES, BER, BLOCKS
 
-from transmitter.gsm_channel_coding.cs1 import CS1BlockCoder
-from transmitter.interleaver.cstch import SpeechInterleaver as CS1Interleaver
-
-from transmitter.gsm_channel_coding.msc1 import MSC1Coding
-from transmitter.interleaver.msc_1 import MCS1Interleaver
-
-from transmitter.gsm_channel_coding.msc5 import MSC5Coding
-from transmitter.interleaver.msc_5 import MCS5Interleaver
-
+from transmitter.gsm_channel_coding.channel_coder import ChannelCoder
+from transmitter.interleaver.base import Interleaver
+from receiver.decoder.logic import ChannelDecoder
 from channel.gsm_channel import GSMChannel
-from channel.pdp_profiles import CHANNEL_PROFILES
-
 from transmitter.modulator import Modulation
 from receiver.demodulator import Demodulation
-
-from receiver.decoder.dec_tch import TCHFSSpeechDecoder
 
 from drawber.berruler import BERRuler  
 from drawber.plot import plot_ber
 
-
-def get_pipeline(channel_type):
-    if channel_type == "TCHFS":
-        return Pipeline([TCHFSBlockCoder(), SpeechInterleaver()])
-    elif channel_type == "CS1":
-        return Pipeline([CS1BlockCoder(), CS1Interleaver()])
-    elif channel_type == "MCS1":
-        return Pipeline([MSC1Coding("MCS1"), MCS1Interleaver()])
-    elif channel_type == "MCS5":
-        return Pipeline([MSC5Coding("MCS5"), MCS5Interleaver()])
-    else:
-        raise ValueError(f"Unknown channel type: {channel_type}")
+#if not BLOCKS["modulator"]["is_working"]:
+#    BLOCKS["demodulator"]["is_working"] = False
+#if not BLOCKS["coder"]["is_working"]:
+#    BLOCKS["decoder"]["is_working"] = False
+#if not BLOCKS["coder"]:
+#    BLOCKS["interleaver"] = False
 
 
 def main():
 
+
+    DEBUG_TRACE = True
+    TRACE_FRAME = 0
+    frame_counter = 0
+    
     channel_type = SIMULATION["channel_type"]
     profile = CHANNEL["profile"]
     
-    pipeline = get_pipeline(channel_type)
+    encoder = ChannelCoder(channel_type, is_working=BLOCKS["coder"]["is_working"])
+    interleaver = Interleaver(channel_type, is_working=BLOCKS["interleaver"]["is_working"])
+    pipeline = Pipeline([encoder, interleaver])
 
-    modulator = Modulation(channel_type)
-    demodulator = Demodulation(channel_type)
+    modulator = Modulation(channel_type, is_working=BLOCKS["modulator"]["is_working"])
+    demodulator = Demodulation(channel_type, is_working=BLOCKS["demodulator"]["is_working"])
     
     mode_cfg = CHANNEL_MODES[channel_type]
-    decoder_class = DECODER_CLASSES[mode_cfg["decoder"]]
-    decoder = decoder_class()
-    frame_bits = mode_cfg["frame_bits"]
     
+    decoder = ChannelDecoder(scheme=mode_cfg["scheme"], is_working=BLOCKS["decoder"]["is_working"])
+    frame_bits = CHANNEL_MODES[channel_type]["frame_bits"]
     ber_ruler = BERRuler(**BER)
 
     while not ber_ruler.isStop:
 
         snr_db = ber_ruler.h2dB 
-        channel = GSMChannel(profile, snr_db)
+        channel = GSMChannel(profile, snr_db, is_working=BLOCKS["channel"]["is_working"])
 
         while not ber_ruler.is_point_finished():
 
             bits = np.random.randint(0, 2, frame_bits)
+            #print(len(bits))
 
             bursts = pipeline.run(bits.tolist())
-
+        
             tx_bursts = [np.array(b) for b in bursts]
 
             signals = [modulator.process(b) for b in tx_bursts]
@@ -76,8 +65,18 @@ def main():
             rx_bursts = [demodulator.process(s) for s in rx_signals]
 
             decoded_bits = decoder.process(rx_bursts)
+            
+            if DEBUG_TRACE and frame_counter == TRACE_FRAME:
+                print("После источника:", bits)
+                print("После кодера:", bursts)
+                print("После burst mapper", tx_bursts)
+                print("После модулятора", signals)
+                print("После канала", rx_signals)
+                print("После демодулятора:", rx_bursts)
+                print("Декодированные:", decoded_bits)
 
             ber_ruler.update_frame(bits, decoded_bits)
+            frame_counter += 1
 
         ber_ruler.finalize_point()
 
