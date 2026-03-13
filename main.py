@@ -1,7 +1,7 @@
 import numpy as np
 
 from core.pipeline import Pipeline
-from config import SIMULATION, CHANNEL, CHANNEL_MODES, BER, BLOCKS
+from config import SIMULATION, CHANNEL, CHANNEL_MODES, BER, BLOCKS, MODULATION
 
 from transmitter.gsm_channel_coding.channel_coder import ChannelCoder
 from transmitter.interleaver.base import Interleaver
@@ -35,8 +35,11 @@ def main():
     interleaver = Interleaver(channel_type, is_working=BLOCKS["interleaver"]["is_working"])
     pipeline = Pipeline([encoder, interleaver])
 
-    modulator = Modulation(channel_type, is_working=BLOCKS["modulator"]["is_working"])
-    demodulator = Demodulation(channel_type, is_working=BLOCKS["demodulator"]["is_working"])
+
+    params_modulation = MODULATION
+    modulator = Modulation(channel_type, params_modulation, is_working=BLOCKS["modulator"]["is_working"])
+    demodulator = Demodulation(channel_type, params_modulation, is_working=BLOCKS["demodulator"]["is_working"])
+
     
     mode_cfg = CHANNEL_MODES[channel_type]
     
@@ -55,14 +58,14 @@ def main():
             #print(len(bits))
 
             bursts = pipeline.run(bits.tolist())
-        
-            tx_bursts = [np.array(b) for b in bursts]
+
+            tx_bursts = [np.array(b[:-8]) for b in bursts]
 
             signals = [modulator.process(b) for b in tx_bursts]
 
             rx_signals = [channel.process(s) for s in signals]
 
-            rx_bursts = [demodulator.process(s) for s in rx_signals]
+            rx_bursts = [demodulator.process(s, params_modulation) for s in rx_signals]
 
             decoded_bits = decoder.process(rx_bursts)
             

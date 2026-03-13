@@ -53,9 +53,13 @@ CHANNEL_MODES = {
     #}
 }
 MODULATION = {
-    "type": "GMSK",
-    "samples_per_symbol": 4,
-    "bt": 0.3
+    "BT": 0.3,
+    "T": 1,
+    "sps": 100,
+    "h": 0.5,
+    "gaus_duration": 4,
+    "rect_duration": 1,
+    "type_demod": "diff_phase" # vit_soft
 }
 CHANNEL = {
     "profile": CHANNEL_PROFILES["TU"]
