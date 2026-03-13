@@ -68,7 +68,7 @@ def main():
 
             bursts = pipeline.run(bits.tolist())
 
-            tx_bursts = [np.array(b) for b in bursts]
+            tx_bursts = [np.array(b[:-8]) for b in bursts]
 
             signals = [modulator.process(b) for b in tx_bursts]
 
