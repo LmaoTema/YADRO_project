@@ -25,10 +25,14 @@ class SpeechDeinterleaver:
 
         return first, second
 
-    def process(self, bursts):
+    def process(self, bits):
 
-        if len(bursts) != 4:
-            raise ValueError("Expected 4 bursts")
+        bits = np.array(bits)
+
+        if len(bits) != 592:
+            raise ValueError("Expected 592 bits (4 bursts)")
+
+        bursts = bits.reshape(4, 148)
 
         subblocks = [None]*8
 
@@ -39,9 +43,9 @@ class SpeechDeinterleaver:
             subblocks[b] = self.deinterleave_57(first)
             subblocks[b+4] = self.deinterleave_57(second)
 
-        bits = np.concatenate(subblocks)
+        bits456 = np.concatenate(subblocks)
 
-        return bits
+        return bits456
 
 def reverse_reordering(u):
 

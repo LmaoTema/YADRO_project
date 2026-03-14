@@ -44,4 +44,4 @@ class MCS1Interleaver:
             ])
             bursts_out.append(burst)
 
-        return np.array(bursts_out) 
+        return np.concatenate(bursts_out) 

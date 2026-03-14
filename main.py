@@ -51,27 +51,26 @@ def main():
         while not ber_ruler.is_point_finished():
 
             bits = np.random.randint(0, 2, frame_bits)
-            #print(len(bits))
 
-            bursts = pipeline.run(bits.tolist())
+            tx_stream = pipeline.run(bits.tolist())
 
-            tx_bursts = [np.array(b[:-8]) for b in bursts]
+            tx_stream = np.array(tx_stream)
 
-            signals = [modulator.process(b) for b in tx_bursts]
+            signal = modulator.process(tx_stream)
 
-            rx_signals = [channel.process(s) for s in signals]
+            rx_signal = channel.process(signal)
 
-            rx_bursts = [demodulator.process(s) for s in rx_signals]
+            rx_bits = demodulator.process(rx_signal)
 
-            decoded_bits = decoder.process(rx_bursts)
-            
+            decoded_bits = decoder.process(rx_bits)
+                        
             if DEBUG_TRACE and frame_counter == TRACE_FRAME:
                 print("После источника:", bits)
-                print("После кодера:", bursts)
-                print("После burst mapper", tx_bursts)
-                print("После модулятора", signals)
-                print("После канала", rx_signals)
-                print("После демодулятора:", rx_bursts)
+                print("После кодера:", tx_stream)
+                print("После burst mapper", tx_stream)
+                print("После модулятора", signal)
+                print("После канала", rx_signal)
+                print("После демодулятора:", rx_bits)
                 print("Декодированные:", decoded_bits)
 
             ber_ruler.update_frame(bits, decoded_bits)

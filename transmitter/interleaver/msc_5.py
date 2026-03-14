@@ -77,4 +77,4 @@ class MCS5Interleaver:
             ])
             bursts.append(burst)
 
-        return np.array(bursts)  
+        return np.concatenate(bursts)  
