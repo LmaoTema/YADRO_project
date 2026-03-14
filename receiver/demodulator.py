@@ -35,14 +35,373 @@ class GMSKDemodulator(Block):
         self.rect_duration = params.get("rect_duration", 1)
         self.type_demod = params.get("type_demod", "diff_phase")
 
+    def calc_rhh(self, g_t):
+        # In general, rhh should be defined in the TSC
+        dt = self.dt
+        sps = self.sps
+        gaus_duration = self.gaus_duration
+        rect_duration = self.rect_duration
+
+        rhh_full = np.convolve(g_t, g_t[::-1]) * dt
+        center_idx = int(rhh_full.size / 2)
+
+        rhh = np.zeros(5, dtype=complex)
+        for k in range(5):
+            rhh[k] = rhh_full[center_idx + k * sps]
+
+        rhh /= rhh[0].real
+
+        return rhh
+
+    def calc_increment(self, rhh):
+        # Compute Increment - a table of values which does not change for subsequent input samples.
+        # Increment is table of reference levels for computation of branch metrics:
+        # branch metric = (+/-)received_sample (+/-) reference_level
+        # Should be like rhh[1].imag, rhh[2].real, rhh[3].imag, rhh[4].real
+        increment = np.zeros(8)
+        increment[0] = -rhh[1] - rhh[2] - rhh[3] + rhh[4]
+        increment[1] = rhh[1] - rhh[2] - rhh[3] + rhh[4]
+        increment[2] = -rhh[1] + rhh[2] - rhh[3] + rhh[4]
+        increment[3] = rhh[1] + rhh[2] - rhh[3] + rhh[4]
+        increment[4] = -rhh[1] - rhh[2] + rhh[3] + rhh[4]
+        increment[5] = rhh[1] - rhh[2] + rhh[3] + rhh[4]
+        increment[6] = -rhh[1] + rhh[2] + rhh[3] + rhh[4]
+        increment[7] = rhh[1] + rhh[2] + rhh[3] + rhh[4]
+
+        return increment
+
+    def calc_metric(
+        self, increment, sampled_signal, start_state=0, stop_states=0, stops_num=0
+    ):
+        # Computation of path metrics and decisions (Add-Compare-Select).
+        # It's composed of two parts: one for odd input samples (imaginary numbers)
+        # and one for even samples (real numbers).
+        path_metrics = np.ones(16) * -1e30
+        path_metrics[start_state] = 0.0
+        old_path_metrics = path_metrics
+        new_path_metrics = np.zeros(16)
+
+        trans_table = np.zeros((148, 16))
+
+        sample_nr = 0
+        samples_num = sampled_signal.size
+
+        while sample_nr < samples_num:
+            # imag part
+            real_imag = 1
+            input_symbol_imag = sampled_signal[sample_nr].imag
+
+            pm_candidate1 = old_path_metrics[0] + input_symbol_imag - increment[2]
+            pm_candidate2 = old_path_metrics[8] + input_symbol_imag + increment[5]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[0] = pm_candidate1
+            else:
+                new_path_metrics[0] = pm_candidate2
+            trans_table[sample_nr][0] = paths_difference
+
+            pm_candidate1 = old_path_metrics[0] - input_symbol_imag + increment[2]
+            pm_candidate2 = old_path_metrics[8] - input_symbol_imag - increment[5]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[1] = pm_candidate1
+            else:
+                new_path_metrics[1] = pm_candidate2
+            trans_table[sample_nr][1] = paths_difference
+
+            pm_candidate1 = old_path_metrics[1] + input_symbol_imag - increment[3]
+            pm_candidate2 = old_path_metrics[9] + input_symbol_imag + increment[4]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[2] = pm_candidate1
+            else:
+                new_path_metrics[2] = pm_candidate2
+            trans_table[sample_nr][2] = paths_difference
+
+            pm_candidate1 = old_path_metrics[1] - input_symbol_imag + increment[3]
+            pm_candidate2 = old_path_metrics[9] - input_symbol_imag - increment[4]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[3] = pm_candidate1
+            else:
+                new_path_metrics[3] = pm_candidate2
+            trans_table[sample_nr][3] = paths_difference
+
+            pm_candidate1 = old_path_metrics[2] + input_symbol_imag - increment[0]
+            pm_candidate2 = old_path_metrics[10] + input_symbol_imag + increment[7]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[4] = pm_candidate1
+            else:
+                new_path_metrics[4] = pm_candidate2
+            trans_table[sample_nr][4] = paths_difference
+
+            pm_candidate1 = old_path_metrics[2] - input_symbol_imag + increment[0]
+            pm_candidate2 = old_path_metrics[10] - input_symbol_imag - increment[7]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[5] = pm_candidate1
+            else:
+                new_path_metrics[5] = pm_candidate2
+            trans_table[sample_nr][5] = paths_difference
+
+            pm_candidate1 = old_path_metrics[3] + input_symbol_imag - increment[1]
+            pm_candidate2 = old_path_metrics[11] + input_symbol_imag + increment[6]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[6] = pm_candidate1
+            else:
+                new_path_metrics[6] = pm_candidate2
+            trans_table[sample_nr][6] = paths_difference
+
+            pm_candidate1 = old_path_metrics[3] - input_symbol_imag + increment[1]
+            pm_candidate2 = old_path_metrics[11] - input_symbol_imag - increment[6]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[7] = pm_candidate1
+            else:
+                new_path_metrics[7] = pm_candidate2
+            trans_table[sample_nr][7] = paths_difference
+
+            pm_candidate1 = old_path_metrics[4] + input_symbol_imag - increment[6]
+            pm_candidate2 = old_path_metrics[12] + input_symbol_imag + increment[1]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[8] = pm_candidate1
+            else:
+                new_path_metrics[8] = pm_candidate2
+            trans_table[sample_nr][8] = paths_difference
+
+            pm_candidate1 = old_path_metrics[4] - input_symbol_imag + increment[6]
+            pm_candidate2 = old_path_metrics[12] - input_symbol_imag - increment[1]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[9] = pm_candidate1
+            else:
+                new_path_metrics[9] = pm_candidate2
+            trans_table[sample_nr][9] = paths_difference
+
+            pm_candidate1 = old_path_metrics[5] + input_symbol_imag - increment[7]
+            pm_candidate2 = old_path_metrics[13] + input_symbol_imag + increment[0]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[10] = pm_candidate1
+            else:
+                new_path_metrics[10] = pm_candidate2
+            trans_table[sample_nr][10] = paths_difference
+
+            pm_candidate1 = old_path_metrics[5] - input_symbol_imag + increment[7]
+            pm_candidate2 = old_path_metrics[13] - input_symbol_imag - increment[0]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[11] = pm_candidate1
+            else:
+                new_path_metrics[11] = pm_candidate2
+            trans_table[sample_nr][11] = paths_difference
+
+            pm_candidate1 = old_path_metrics[6] + input_symbol_imag - increment[4]
+            pm_candidate2 = old_path_metrics[14] + input_symbol_imag + increment[3]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[12] = pm_candidate1
+            else:
+                new_path_metrics[12] = pm_candidate2
+            trans_table[sample_nr][12] = paths_difference
+
+            pm_candidate1 = old_path_metrics[6] - input_symbol_imag + increment[4]
+            pm_candidate2 = old_path_metrics[14] - input_symbol_imag - increment[3]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[13] = pm_candidate1
+            else:
+                new_path_metrics[13] = pm_candidate2
+            trans_table[sample_nr][13] = paths_difference
+
+            pm_candidate1 = old_path_metrics[7] + input_symbol_imag - increment[5]
+            pm_candidate2 = old_path_metrics[15] + input_symbol_imag + increment[2]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[14] = pm_candidate1
+            else:
+                new_path_metrics[14] = pm_candidate2
+            trans_table[sample_nr][14] = paths_difference
+
+            pm_candidate1 = old_path_metrics[7] - input_symbol_imag + increment[5]
+            pm_candidate2 = old_path_metrics[15] - input_symbol_imag - increment[2]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[15] = pm_candidate1
+            else:
+                new_path_metrics[15] = pm_candidate2
+            trans_table[sample_nr][15] = paths_difference
+
+            tmp = old_path_metrics
+            old_path_metrics = new_path_metrics
+            new_path_metrics = tmp
+
+            sample_nr += 1
+            if sample_nr == samples_num:
+                break
+
+            # real part
+            real_imag = 0
+            input_symbol_real = sampled_signal[sample_nr].real
+
+            pm_candidate1 = old_path_metrics[0] - input_symbol_real - increment[7]
+            pm_candidate2 = old_path_metrics[8] - input_symbol_real + increment[0]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[0] = pm_candidate1
+            else:
+                new_path_metrics[0] = pm_candidate2
+            trans_table[sample_nr][0] = paths_difference
+
+            pm_candidate1 = old_path_metrics[0] + input_symbol_real + increment[7]
+            pm_candidate2 = old_path_metrics[8] + input_symbol_real - increment[0]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[1] = pm_candidate1
+            else:
+                new_path_metrics[1] = pm_candidate2
+            trans_table[sample_nr][1] = paths_difference
+
+            pm_candidate1 = old_path_metrics[1] - input_symbol_real - increment[6]
+            pm_candidate2 = old_path_metrics[9] - input_symbol_real + increment[1]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[2] = pm_candidate1
+            else:
+                new_path_metrics[2] = pm_candidate2
+            trans_table[sample_nr][2] = paths_difference
+
+            pm_candidate1 = old_path_metrics[1] + input_symbol_real + increment[6]
+            pm_candidate2 = old_path_metrics[9] + input_symbol_real - increment[1]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[3] = pm_candidate1
+            else:
+                new_path_metrics[3] = pm_candidate2
+            trans_table[sample_nr][3] = paths_difference
+
+            pm_candidate1 = old_path_metrics[2] - input_symbol_real - increment[5]
+            pm_candidate2 = old_path_metrics[10] - input_symbol_real + increment[2]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[4] = pm_candidate1
+            else:
+                new_path_metrics[4] = pm_candidate2
+            trans_table[sample_nr][4] = paths_difference
+
+            pm_candidate1 = old_path_metrics[2] + input_symbol_real + increment[5]
+            pm_candidate2 = old_path_metrics[10] + input_symbol_real - increment[2]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[5] = pm_candidate1
+            else:
+                new_path_metrics[5] = pm_candidate2
+            trans_table[sample_nr][5] = paths_difference
+
+            pm_candidate1 = old_path_metrics[3] - input_symbol_real - increment[4]
+            pm_candidate2 = old_path_metrics[11] - input_symbol_real + increment[3]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[6] = pm_candidate1
+            else:
+                new_path_metrics[6] = pm_candidate2
+            trans_table[sample_nr][6] = paths_difference
+
+            pm_candidate1 = old_path_metrics[3] + input_symbol_real + increment[4]
+            pm_candidate2 = old_path_metrics[11] + input_symbol_real - increment[3]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[7] = pm_candidate1
+            else:
+                new_path_metrics[7] = pm_candidate2
+            trans_table[sample_nr][7] = paths_difference
+
+            pm_candidate1 = old_path_metrics[4] - input_symbol_real - increment[3]
+            pm_candidate2 = old_path_metrics[12] - input_symbol_real + increment[4]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[8] = pm_candidate1
+            else:
+                new_path_metrics[8] = pm_candidate2
+            trans_table[sample_nr][8] = paths_difference
+
+            pm_candidate1 = old_path_metrics[4] + input_symbol_real + increment[3]
+            pm_candidate2 = old_path_metrics[12] + input_symbol_real - increment[4]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[9] = pm_candidate1
+            else:
+                new_path_metrics[9] = pm_candidate2
+            trans_table[sample_nr][9] = paths_difference
+
+            pm_candidate1 = old_path_metrics[5] - input_symbol_real - increment[2]
+            pm_candidate2 = old_path_metrics[13] - input_symbol_real + increment[5]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[10] = pm_candidate1
+            else:
+                new_path_metrics[10] = pm_candidate2
+            trans_table[sample_nr][10] = paths_difference
+
+            pm_candidate1 = old_path_metrics[5] + input_symbol_real + increment[2]
+            pm_candidate2 = old_path_metrics[13] + input_symbol_real - increment[5]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[11] = pm_candidate1
+            else:
+                new_path_metrics[11] = pm_candidate2
+            trans_table[sample_nr][11] = paths_difference
+
+            pm_candidate1 = old_path_metrics[6] - input_symbol_real - increment[1]
+            pm_candidate2 = old_path_metrics[14] - input_symbol_real + increment[6]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[12] = pm_candidate1
+            else:
+                new_path_metrics[12] = pm_candidate2
+            trans_table[sample_nr][12] = paths_difference
+
+            pm_candidate1 = old_path_metrics[6] + input_symbol_real + increment[1]
+            pm_candidate2 = old_path_metrics[14] + input_symbol_real - increment[6]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[13] = pm_candidate1
+            else:
+                new_path_metrics[13] = pm_candidate2
+            trans_table[sample_nr][13] = paths_difference
+
+            pm_candidate1 = old_path_metrics[7] - input_symbol_real - increment[0]
+            pm_candidate2 = old_path_metrics[15] - input_symbol_real + increment[7]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[14] = pm_candidate1
+            else:
+                new_path_metrics[14] = pm_candidate2
+            trans_table[sample_nr][14] = paths_difference
+
+            pm_candidate1 = old_path_metrics[7] + input_symbol_real + increment[0]
+            pm_candidate2 = old_path_metrics[15] + input_symbol_real - increment[7]
+            paths_difference = pm_candidate2 - pm_candidate1
+            if paths_difference < 0:
+                new_path_metrics[15] = pm_candidate1
+            else:
+                new_path_metrics[15] = pm_candidate2
+            trans_table[sample_nr][15] = paths_difference
+
+            tmp = old_path_metrics
+            old_path_metrics = new_path_metrics
+            new_path_metrics = tmp
 
     def process(self, complex_signal):
-        
+
         if not getattr(self, "is_working", True):
             return np.array(complex_signal, copy=True)
-        
+
         type_demod = self.type_demod
-        
+
         if type_demod == "diff_phase":
 
             sample_indices = np.arange(148) * self.sps + int(self.sps / 2)
@@ -67,57 +426,18 @@ class GMSKDemodulator(Block):
 
         elif type_demod == "vit_soft":
 
-            T = self.T
-            BT = self.BT
-            dt = self.dt
-            sps = self.sps
-            gaus_duration = self.gaus_duration
-            rect_duration = self.rect_duration
+            g_t = self.gmsk_filter()
 
-            delta = np.sqrt(np.log(2)) / (2 * np.pi * BT)
+            rhh = self.calc_rhh(g_t)
 
-            t_h = np.arange(-gaus_duration / 2 * T, gaus_duration / 2 * T, dt)
-            t_rect = np.arange(-rect_duration / 2 * T, rect_duration / 2 * T, dt)
+            increment = self.calc_increment(rhh)
 
-            h_t = np.exp(-(t_h**2) / (2 * (delta**2) * (T**2))) / (
-                np.sqrt(2 * np.pi) * delta * T
-            )
-            rect = np.ones(t_rect.size) / T
-
-            g_t = np.convolve(h_t, rect) * dt
-
-            rhh_full = np.convolve(g_t, g_t[::-1]) * dt
-            center_idx = int(rhh_full.size/2)
-
-            rhh = np.zeros(5, dtype=complex)
-            for k in range(5):
-                rhh[k] = rhh_full[center_idx + k * sps]
-
-            rhh /= rhh[0].real
-
-            increment = np.zeros(8)
-            increment[0] = -rhh[1].imag() - rhh[2].real() - rhh[3].imag() + rhh[4].real()
-            increment[1] = rhh[1].imag() - rhh[2].real() - rhh[3].imag() + rhh[4].real()
-            increment[2] = -rhh[1].imag() + rhh[2].real() - rhh[3].imag() + rhh[4].real()
-            increment[3] = rhh[1].imag() + rhh[2].real() - rhh[3].imag() + rhh[4].real()
-            increment[4] = -rhh[1].imag() - rhh[2].real() + rhh[3].imag() + rhh[4].real()
-            increment[5] = rhh[1].imag() - rhh[2].real() + rhh[3].imag() + rhh[4].real()
-            increment[6] = -rhh[1].imag() + rhh[2].real() + rhh[3].imag() + rhh[4].real()
-            increment[7] = rhh[1].imag() + rhh[2].real() + rhh[3].imag() + rhh[4].real()
-
-            path_metrics = np.ones(16) * -1e30
-            path_metrics[0] = 0.0
-            trans_table = np.zeros((148, 16))
-
-            sample_nr = 0
-            old_path_metrics = path_metrics
-            new_path_metrics = path_metrics
+            sampled_signal = complex_signal[int(self.sps / 2) :: self.sps]
+            trans_table = self.calc_metric(increment, sampled_signal)
 
             bits = 0
 
         return bits
-
-
 
 
 class PSKDemodulator(Block):
