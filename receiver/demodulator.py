@@ -80,14 +80,14 @@ class GMSKDemodulator(Block):
         # branch metric = (+/-)received_sample (+/-) reference_level
         # Should be like rhh[1].imag, rhh[2].real, rhh[3].imag, rhh[4].real
         increment = np.zeros(8)
-        increment[0] = -rhh[1] - rhh[2] - rhh[3] + rhh[4]
-        increment[1] = rhh[1] - rhh[2] - rhh[3] + rhh[4]
-        increment[2] = -rhh[1] + rhh[2] - rhh[3] + rhh[4]
-        increment[3] = rhh[1] + rhh[2] - rhh[3] + rhh[4]
-        increment[4] = -rhh[1] - rhh[2] + rhh[3] + rhh[4]
-        increment[5] = rhh[1] - rhh[2] + rhh[3] + rhh[4]
-        increment[6] = -rhh[1] + rhh[2] + rhh[3] + rhh[4]
-        increment[7] = rhh[1] + rhh[2] + rhh[3] + rhh[4]
+        increment[0] = -rhh[1].real + rhh[2].real + rhh[3].real + rhh[4].real
+        increment[1] = rhh[1].real + rhh[2].real + rhh[3].real + rhh[4].real
+        increment[2] = -rhh[1].real - rhh[2].real + rhh[3].real + rhh[4].real
+        increment[3] = rhh[1].real - rhh[2].real + rhh[3].real + rhh[4].real
+        increment[4] = -rhh[1].real + rhh[2].real - rhh[3].real + rhh[4].real
+        increment[5] = rhh[1].real + rhh[2].real - rhh[3].real + rhh[4].real
+        increment[6] = -rhh[1].real - rhh[2].real - rhh[3].real + rhh[4].real
+        increment[7] = rhh[1].real - rhh[2].real - rhh[3].real + rhh[4].real
 
         return increment
 
@@ -415,6 +415,8 @@ class GMSKDemodulator(Block):
             old_path_metrics = new_path_metrics
             new_path_metrics = tmp
 
+            sample_nr += 1
+
         return trans_table, old_path_metrics, real_imag
     
     def find_best_stop_state(self, old_path_metrics, stop_states=[0, 8]):
@@ -474,8 +476,8 @@ class GMSKDemodulator(Block):
             
 
             out_bit = out_bit ^ real_imag ^ int(parity_table[state_nr])
-            state_nr = prev_table[state_nr][decision]
-            real_imag = not real_imag
+            state_nr = int(prev_table[state_nr][decision])
+            real_imag = 1 - real_imag
 
         return output_bits
 
