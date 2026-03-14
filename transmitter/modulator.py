@@ -38,8 +38,8 @@ class GMSKModulation:
         return
 
     def differential_encoding(self, bits):
-        if bits.size % 148 != 0:
-            raise ValueError("Количество модуляционных бит должно быть кратным 148")
+        if bits.size % 156 != 0:
+            raise ValueError("Количество модуляционных бит должно быть кратным 156")
 
         d_prev = np.ones(bits.size, dtype=int)
         d_prev[1:] = bits[:-1]
@@ -113,16 +113,23 @@ class GMSKModulation:
         
         if not getattr(self, "is_working", True):
              return np.array(bits, dtype=complex)
+        
+        burst_size = 156
+        num_bursts = len(bits) // burst_size
+    
+        all_signals = []
+    
+        for i in range(num_bursts):
+            burst = bits[i*burst_size : (i+1)*burst_size]
+            alpha = self.differential_encoding(burst)
+            g_t = self.gmsk_filter()
+            phi = self.calc_phase(alpha, g_t)
+            signal = self.calc_signal(phi)
+            
+            all_signals.append(signal)
+    
 
-        alpha = self.differential_encoding(bits)
-
-        g_t = self.gmsk_filter()
-
-        phi = self.calc_phase(alpha, g_t)
-
-        signal = self.calc_signal(phi)
-
-        return signal
+        return np.concatenate(all_signals)
 
 
 class PSKModulation:

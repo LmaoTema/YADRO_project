@@ -11,7 +11,7 @@ BLOCKS = {
     "interleaver": {"is_working": True},
     "modulation": {"is_working": True},
     "channel": {"is_working": True},
-    "equalizer": {"is_working": False},
+    "equalizer": {"is_working": True},
 }
 
 BER = {
@@ -57,7 +57,7 @@ MODULATION = {
     "h": 0.5,
     "gaus_duration": 4,
     "rect_duration": 1,
-    "type_demod": "vit_hard" # diff_phase vit_soft vit_hard
+    "type_demod": "diff_phase" # diff_phase vit_soft vit_hard
 }
 CHANNEL = {
     "profile": CHANNEL_PROFILES["TU"]
