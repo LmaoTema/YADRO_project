@@ -99,10 +99,12 @@ class GMSKDemodulator(Block):
         old_path_metrics[start_state] = 0.0
         new_path_metrics = np.zeros(16)
 
-        trans_table = np.zeros((148, 16))
+        samples_num = sampled_signal.size
+
+        trans_table = np.zeros((samples_num, 16))
 
         sample_nr = 0
-        samples_num = sampled_signal.size
+        
 
         while sample_nr < samples_num:
             # imag part
@@ -459,12 +461,12 @@ class GMSKDemodulator(Block):
             else:
                 decision = 0
 
-            if type_decision == "soft":
+            if type_decision == "vit_soft":
                 if (decision != out_bit):
                     output_bits[sample_nr] = -trans_table[sample_nr][state_nr]
                 else:
                     output_bits[sample_nr] = trans_table[sample_nr][state_nr]
-            elif type_decision == "hard":
+            elif type_decision == "vit_hard":
                 if (decision != out_bit):
                     output_bits[sample_nr] = 1
                 else:
@@ -482,45 +484,57 @@ class GMSKDemodulator(Block):
         if not getattr(self, "is_working", True):
             return np.array(complex_signal, copy=True)
 
-        type_demod = self.type_demod
+        sps = self.sps
+        samples_per_burst = 156 * sps
+        num_bursts = len(complex_signal) // samples_per_burst
+    
+        all_bits = []
 
-        if type_demod == "diff_phase":
-
-            sample_indices = np.arange(148) * self.sps + int(self.sps / 2)
-            y_k = complex_signal[sample_indices]
-
-            y_k_prev = np.zeros(y_k.size, dtype=complex)
-            y_k_prev[1:] = y_k[:-1]
-            y_k_prev[0] = 1 + 0j
-
-            delta_phi = np.angle(y_k * np.conj(y_k_prev))
-
-            alpha = np.ones(delta_phi.size)
-            alpha[delta_phi <= 0] = -1
-
-            d_curr = ((1 - alpha) / 2).astype(int)
-
-            bits = np.zeros(148, dtype=int)
-            d_prev = 1
-            for i in range(148):
-                bits[i] = d_curr[i] ^ d_prev
-                d_prev = bits[i]
-
-        elif type_demod in ["vit_soft", "vit_hard"]:
-
+        if self.type_demod in ["vit_soft", "vit_hard"]:
             g_t = self.gmsk_filter()
-
             rhh = self.calc_rhh(g_t)
-
             increment = self.calc_increment(rhh)
 
-            sampled_signal = complex_signal[int(self.sps / 2) :: self.sps]
-            trans_table, old_path_metrics, real_imag = self.calc_metric(increment, sampled_signal)
+        for b in range(num_bursts):
 
-            best_stop_state = self.find_best_stop_state(old_path_metrics)
+            start_idx = b * samples_per_burst
+            burst_samples = complex_signal[start_idx : start_idx + 148 * sps]
 
-            bits = self.traceback(trans_table, best_stop_state, real_imag, type_demod)
+            if self.type_demod == "diff_phase":
 
+                y_k = burst_samples[int(self.sps / 2) :: self.sps]
+
+                y_k_prev = np.zeros(y_k.size, dtype=complex)
+                y_k_prev[1:] = y_k[:-1]
+                y_k_prev[0] = 1 + 0j
+
+                delta_phi = np.angle(y_k * np.conj(y_k_prev))
+
+                alpha = np.ones(delta_phi.size)
+                alpha[delta_phi <= 0] = -1
+
+                d_curr = ((1 - alpha) / 2).astype(int)
+
+                burst_bits = np.zeros(d_curr.size, dtype=int)
+                d_prev = 1
+                for i in range(d_curr.size):
+                    burst_bits[i] = d_curr[i] ^ d_prev
+                    d_prev = burst_bits[i]
+
+                all_bits.append(burst_bits)
+
+            elif self.type_demod in ["vit_soft", "vit_hard"]:
+
+                sampled_signal = burst_samples[int(self.sps / 2) :: self.sps]
+                trans_table, old_path_metrics, real_imag = self.calc_metric(increment, sampled_signal, start_state=0)
+
+                best_stop_state = self.find_best_stop_state(old_path_metrics)
+
+                burst_bits = self.traceback(trans_table, best_stop_state, real_imag, self.type_demod)
+
+                all_bits.append(burst_bits)
+                
+        bits = np.concatenate(all_bits)
         return bits
 
 
