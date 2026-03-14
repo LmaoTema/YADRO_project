@@ -7,10 +7,10 @@ SIMULATION = {
 
 BLOCKS = {
 
-    "encoding": {"is_working": False},
-    "interleaver": {"is_working": False},
+    "encoding": {"is_working": True},
+    "interleaver": {"is_working": True},
     "modulation": {"is_working": True},
-    "channel": {"is_working": False},
+    "channel": {"is_working": True},
     "equalizer": {"is_working": False},
 }
 
@@ -35,7 +35,7 @@ BER = {
 CHANNEL_MODES = {
     "TCHFS": {
         "scheme": "TCHFS",
-        "frame_bits": 148
+        "frame_bits": 260
     },
    # "CS1": {
     #    "scheme": "CS1",

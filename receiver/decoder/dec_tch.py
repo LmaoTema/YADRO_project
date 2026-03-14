@@ -121,12 +121,12 @@ class TCHFSSpeechDecoder:
         return class1a_crc, class1b
 
 
-    def process(self, bursts):
-        
-        if not getattr(self, "is_working", True):
-            return np.array([b for burst in bursts for b in burst], dtype=int)
+    def process(self, bits):
 
-        bits456 = self.deint.process(bursts)
+        if not getattr(self, "is_working", True):
+            return np.array(bits, dtype=int)
+
+        bits456 = self.deint.process(bits)
 
         coded = bits456[:378]
         class2 = bits456[378:]
