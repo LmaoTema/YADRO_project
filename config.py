@@ -57,7 +57,7 @@ MODULATION = {
     "h": 0.5,
     "gaus_duration": 4,
     "rect_duration": 1,
-    "type_demod": "diff_phase" # vit_soft
+    "type_demod": "vit_hard" # diff_phase vit_soft vit_hard
 }
 CHANNEL = {
     "profile": CHANNEL_PROFILES["TU"]

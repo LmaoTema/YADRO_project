@@ -35,6 +35,27 @@ class GMSKDemodulator(Block):
         self.rect_duration = params.get("rect_duration", 1)
         self.type_demod = params.get("type_demod", "diff_phase")
 
+    def gmsk_filter(self):
+        BT = self.BT
+        T = self.T
+        dt = self.dt
+        gaus_duration = self.gaus_duration
+        rect_duration = self.rect_duration
+
+        delta = np.sqrt(np.log(2)) / (2 * np.pi * BT)
+
+        t_h = np.arange(-gaus_duration / 2 * T, gaus_duration / 2 * T, dt)
+        t_rect = np.arange(-rect_duration / 2 * T, rect_duration / 2 * T, dt)
+
+        h_t = np.exp(-(t_h**2) / (2 * (delta**2) * (T**2))) / (
+            np.sqrt(2 * np.pi) * delta * T
+        )
+        rect = np.ones(t_rect.size) / T
+
+        g_t = np.convolve(h_t, rect) * dt
+
+        return g_t
+
     def calc_rhh(self, g_t):
         # In general, rhh should be defined in the TSC
         dt = self.dt
@@ -70,15 +91,12 @@ class GMSKDemodulator(Block):
 
         return increment
 
-    def calc_metric(
-        self, increment, sampled_signal, start_state=0, stop_states=0, stops_num=0
-    ):
+    def calc_metric(self, increment, sampled_signal, start_state=0):
         # Computation of path metrics and decisions (Add-Compare-Select).
         # It's composed of two parts: one for odd input samples (imaginary numbers)
         # and one for even samples (real numbers).
-        path_metrics = np.ones(16) * -1e30
-        path_metrics[start_state] = 0.0
-        old_path_metrics = path_metrics
+        old_path_metrics = np.ones(16) * -1e30
+        old_path_metrics[start_state] = 0.0
         new_path_metrics = np.zeros(16)
 
         trans_table = np.zeros((148, 16))
@@ -395,6 +413,70 @@ class GMSKDemodulator(Block):
             old_path_metrics = new_path_metrics
             new_path_metrics = tmp
 
+        return trans_table, old_path_metrics, real_imag
+    
+    def find_best_stop_state(self, old_path_metrics, stop_states=[0, 8]):
+        best_stop_state = stop_states[0]
+        max_stop_state_metric = old_path_metrics[best_stop_state]
+        for s in stop_states:
+            if old_path_metrics[s] > max_stop_state_metric:
+                max_stop_state_metric = old_path_metrics[s]
+                best_stop_state = s
+
+        return best_stop_state
+    
+    def traceback(self, trans_table, best_stop_state, real_imag, type_decision):
+        num_samples = trans_table.shape[0]
+        
+        parity_table = np.array([0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0])
+        
+        prev_table = np.array([
+            [0, 8], [0, 8],
+            [1, 9], [1, 9],
+            [2, 10], [2, 10],
+            [3, 11], [3, 11],
+            [4, 12], [4, 12],
+            [5, 13], [5, 13],
+            [6, 14], [6, 14],
+            [7, 15], [7, 15]
+        ])
+
+        if type_decision == "vit_soft":
+            output_bits = np.zeros(num_samples, dtype=float)
+        elif type_decision == "vit_hard":
+            output_bits = np.zeros(num_samples, dtype=int)
+        else:
+            raise ValueError("Неверный тип принятия решения")
+        
+        sample_nr = num_samples
+        state_nr = best_stop_state
+        out_bit = 1
+
+        while (sample_nr > 0):
+            sample_nr -= 1
+            if (trans_table[sample_nr][state_nr] > 0):
+                decision = 1
+            else:
+                decision = 0
+
+            if type_decision == "soft":
+                if (decision != out_bit):
+                    output_bits[sample_nr] = -trans_table[sample_nr][state_nr]
+                else:
+                    output_bits[sample_nr] = trans_table[sample_nr][state_nr]
+            elif type_decision == "hard":
+                if (decision != out_bit):
+                    output_bits[sample_nr] = 1
+                else:
+                    output_bits[sample_nr] = 0
+            
+
+            out_bit = out_bit ^ real_imag ^ int(parity_table[state_nr])
+            state_nr = prev_table[state_nr][decision]
+            real_imag = not real_imag
+
+        return output_bits
+
     def process(self, complex_signal):
 
         if not getattr(self, "is_working", True):
@@ -424,7 +506,7 @@ class GMSKDemodulator(Block):
                 bits[i] = d_curr[i] ^ d_prev
                 d_prev = bits[i]
 
-        elif type_demod == "vit_soft":
+        elif type_demod in ["vit_soft", "vit_hard"]:
 
             g_t = self.gmsk_filter()
 
@@ -433,9 +515,11 @@ class GMSKDemodulator(Block):
             increment = self.calc_increment(rhh)
 
             sampled_signal = complex_signal[int(self.sps / 2) :: self.sps]
-            trans_table = self.calc_metric(increment, sampled_signal)
+            trans_table, old_path_metrics, real_imag = self.calc_metric(increment, sampled_signal)
 
-            bits = 0
+            best_stop_state = self.find_best_stop_state(old_path_metrics)
+
+            bits = self.traceback(trans_table, best_stop_state, real_imag, type_demod)
 
         return bits
 
