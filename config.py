@@ -7,13 +7,11 @@ SIMULATION = {
 
 BLOCKS = {
 
-    "coder": {"is_working": True},
+    "encoding": {"is_working": True},
     "interleaver": {"is_working": True},
-    "modulator": {"is_working": True},
+    "modulation": {"is_working": True},
     "channel": {"is_working": True},
     "equalizer": {"is_working": True},
-    "demodulator": {"is_working": True},
-    "decoder": {"is_working": True}
 }
 
 BER = {

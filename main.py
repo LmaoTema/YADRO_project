@@ -13,11 +13,7 @@ from receiver.demodulator import Demodulation
 from drawber.berruler import BERRuler  
 from drawber.plot import plot_ber
 
-#if not BLOCKS["modulator"]["is_working"]:
-#    BLOCKS["demodulator"]["is_working"] = False
-#if not BLOCKS["coder"]["is_working"]:
-#    BLOCKS["decoder"]["is_working"] = False
-#if not BLOCKS["coder"]:
+#if not BLOCKS["encoding"]:
 #    BLOCKS["interleaver"] = False
 
 
@@ -31,19 +27,19 @@ def main():
     channel_type = SIMULATION["channel_type"]
     profile = CHANNEL["profile"]
     
-    encoder = ChannelCoder(channel_type, is_working=BLOCKS["coder"]["is_working"])
+    encoder = ChannelCoder(channel_type, is_working=BLOCKS["encoding"]["is_working"])
     interleaver = Interleaver(channel_type, is_working=BLOCKS["interleaver"]["is_working"])
     pipeline = Pipeline([encoder, interleaver])
 
 
     params_modulation = MODULATION
-    modulator = Modulation(channel_type, params_modulation, is_working=BLOCKS["modulator"]["is_working"])
-    demodulator = Demodulation(channel_type, params_modulation, is_working=BLOCKS["demodulator"]["is_working"])
+    modulator = Modulation(channel_type, params_modulation, is_working=BLOCKS["modulation"]["is_working"])
+    demodulator = Demodulation(channel_type, params_modulation, is_working=BLOCKS["modulation"]["is_working"])
 
     
     mode_cfg = CHANNEL_MODES[channel_type]
     
-    decoder = ChannelDecoder(scheme=mode_cfg["scheme"], is_working=BLOCKS["decoder"]["is_working"])
+    decoder = ChannelDecoder(scheme=mode_cfg["scheme"], is_working=BLOCKS["encoding"]["is_working"])
     frame_bits = CHANNEL_MODES[channel_type]["frame_bits"]
     ber_ruler = BERRuler(**BER)
 
@@ -65,7 +61,7 @@ def main():
 
             rx_signals = [channel.process(s) for s in signals]
 
-            rx_bursts = [demodulator.process(s, params_modulation) for s in rx_signals]
+            rx_bursts = [demodulator.process(s) for s in rx_signals]
 
             decoded_bits = decoder.process(rx_bursts)
             

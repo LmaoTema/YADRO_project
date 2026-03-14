@@ -36,7 +36,7 @@ class GMSKDemodulator(Block):
         self.type_demod = params.get("type_demod", "diff_phase")
 
 
-    def process(self, complex_signal, params):
+    def process(self, complex_signal):
         
         if not getattr(self, "is_working", True):
             return np.array(complex_signal, copy=True)
@@ -110,8 +110,8 @@ class GMSKDemodulator(Block):
             trans_table = np.zeros((148, 16))
 
             sample_nr = 0
-            old_path_metrics = path_metrics1
-            new_path_metrics = path_metrics2
+            old_path_metrics = path_metrics
+            new_path_metrics = path_metrics
 
             bits = 0
 
