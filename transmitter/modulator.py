@@ -133,16 +133,8 @@ class GMSKModulation:
             all_signals.append(guard_period)
 
         
-
-<<<<<<< HEAD
-        signal = self.calc_signal(phi)
-        #bits = np.array(bits)
-        #signal = 2*bits - 1
-        
-        return signal
-=======
         return np.concatenate(all_signals)
->>>>>>> c50fdd552be25890ad129d146fcb673215b6d8eb
+
 
 
 class PSKModulation:
