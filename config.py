@@ -7,8 +7,8 @@ SIMULATION = {
 
 BLOCKS = {
 
-    "encoding": {"is_working": True},
-    "interleaver": {"is_working": True},
+    "encoding": {"is_working": False},
+    "interleaver": {"is_working": False},
     "modulation": {"is_working": True},
     "channel": {"is_working": True},
     "equalizer": {"is_working": False},
@@ -19,7 +19,7 @@ BER = {
     "h2dB_init_step": 0.4,
     "h2dB_min_step": 0.1,
     "h2dB_max_step": 1.6,
-    "h2dB_max": 15,
+    "h2dB_max": 9,
     "min_BER": 1e-4,
     "min_FER": 1,
     "min_NumErBits": 500,

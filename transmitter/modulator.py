@@ -114,14 +114,16 @@ class GMSKModulation:
         if not getattr(self, "is_working", True):
              return np.array(bits, dtype=complex)
 
-        alpha = self.differential_encoding(bits)
+       # alpha = self.differential_encoding(bits)
 
-        g_t = self.gmsk_filter()
+       # g_t = self.gmsk_filter()
 
-        phi = self.calc_phase(alpha, g_t)
+       # phi = self.calc_phase(alpha, g_t)
 
-        signal = self.calc_signal(phi)
-
+       # signal = self.calc_signal(phi)
+        bits = np.array(bits)
+        signal = 2*bits - 1
+        
         return signal
 
 
