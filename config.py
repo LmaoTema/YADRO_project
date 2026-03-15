@@ -59,8 +59,11 @@ MODULATION = {
     "rect_duration": 1,
     "type_demod": "diff_phase" # vit_soft
 }
+
 CHANNEL = {
-    "profile": CHANNEL_PROFILES["TU"]
+    "profile": "TU",        # TU / RA / HT
+    "sample_rate": 1e6,
+    "doppler": 100
 }
 DEBUG = {
     "print_crc_errors": False,
