@@ -80,14 +80,14 @@ class GMSKDemodulator(Block):
         # branch metric = (+/-)received_sample (+/-) reference_level
         # Should be like rhh[1].imag, rhh[2].real, rhh[3].imag, rhh[4].real
         increment = np.zeros(8)
-        increment[0] = -rhh[1].real + rhh[2].real + rhh[3].real + rhh[4].real
-        increment[1] = rhh[1].real + rhh[2].real + rhh[3].real + rhh[4].real
-        increment[2] = -rhh[1].real - rhh[2].real + rhh[3].real + rhh[4].real
-        increment[3] = rhh[1].real - rhh[2].real + rhh[3].real + rhh[4].real
-        increment[4] = -rhh[1].real + rhh[2].real - rhh[3].real + rhh[4].real
-        increment[5] = rhh[1].real + rhh[2].real - rhh[3].real + rhh[4].real
-        increment[6] = -rhh[1].real - rhh[2].real - rhh[3].real + rhh[4].real
-        increment[7] = rhh[1].real - rhh[2].real - rhh[3].real + rhh[4].real
+        increment[0] = -rhh[1].imag - rhh[2].real - rhh[3].imag + rhh[4].real
+        increment[1] = rhh[1].imag - rhh[2].real - rhh[3].imag + rhh[4].real
+        increment[2] = -rhh[1].imag + rhh[2].real - rhh[3].imag + rhh[4].real
+        increment[3] = rhh[1].imag + rhh[2].real - rhh[3].imag + rhh[4].real
+        increment[4] = -rhh[1].imag - rhh[2].real + rhh[3].imag + rhh[4].real
+        increment[5] = rhh[1].imag - rhh[2].real + rhh[3].imag + rhh[4].real
+        increment[6] = -rhh[1].imag + rhh[2].real + rhh[3].imag + rhh[4].real
+        increment[7] = rhh[1].imag + rhh[2].real + rhh[3].imag + rhh[4].real
 
         return increment
 
