@@ -400,14 +400,42 @@ class GMSKDemodulator(Block):
         if not getattr(self, "is_working", True):
             return np.array(complex_signal, copy=True)
 
-        signal = np.array(complex_signal)
+        type_demod = self.type_demod
 
-        # decision
-        bits = (signal > 0).astype(int)
-        
-       # bursts = bits.reshape(-1, 156)   # 4 bursts × 156
-       # bursts = bursts[:, :148]         # убираем 8 guard bits
-       # bits = bursts.reshape(-1)        # обратно в поток
+        if type_demod == "diff_phase":
+
+            sample_indices = np.arange(148) * self.sps + int(self.sps / 2)
+            y_k = complex_signal[sample_indices]
+
+            y_k_prev = np.zeros(y_k.size, dtype=complex)
+            y_k_prev[1:] = y_k[:-1]
+            y_k_prev[0] = 1 + 0j
+
+            delta_phi = np.angle(y_k * np.conj(y_k_prev))
+
+            alpha = np.ones(delta_phi.size)
+            alpha[delta_phi <= 0] = -1
+
+            d_curr = ((1 - alpha) / 2).astype(int)
+
+            bits = np.zeros(148, dtype=int)
+            d_prev = 1
+            for i in range(148):
+                bits[i] = d_curr[i] ^ d_prev
+                d_prev = bits[i]
+
+        elif type_demod == "vit_soft":
+
+            g_t = self.gmsk_filter()
+
+            rhh = self.calc_rhh(g_t)
+
+            increment = self.calc_increment(rhh)
+
+            sampled_signal = complex_signal[int(self.sps / 2) :: self.sps]
+            trans_table = self.calc_metric(increment, sampled_signal)
+
+            bits = 0
 
         return bits
 
