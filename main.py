@@ -6,17 +6,46 @@ from config import SIMULATION, CHANNEL, CHANNEL_MODES, BER, BLOCKS, MODULATION
 from transmitter.gsm_channel_coding.channel_coder import ChannelCoder
 from transmitter.interleaver.base import Interleaver
 from receiver.decoder.logic import ChannelDecoder
-from channel.gsm_channel import GSMChannel
+
+from channel.awgn_channel import AWGNChannel
+from channel.rayleigh_single_path import RayleighSinglePathChannel
+from channel.rayleigh_multipath import RayleighMultipathChannel
+
 from transmitter.modulator import Modulation
 from receiver.demodulator import Demodulation
 
-from drawber.berruler import BERRuler  
+from drawber.berruler import BERRuler
 from drawber.plot import plot_ber
 
 #if not BLOCKS["encoding"]:
 #    BLOCKS["interleaver"] = False
 
+def create_channel(channel_model, snr_db, profile):
 
+    if channel_model == "awgn":
+
+        return AWGNChannel(
+            snr_db=snr_db
+        )
+
+    elif channel_model == "rayleigh_single":
+
+        return RayleighSinglePathChannel(
+            maximum_doppler_shift=CHANNEL["doppler"],
+            sample_rate=CHANNEL["sample_rate"]
+        )
+
+    elif channel_model == "rayleigh_multipath":
+
+        return RayleighMultipathChannel(
+            sample_rate=CHANNEL["sample_rate"],
+            profile=profile,
+            maximum_doppler_shift=CHANNEL["doppler"]
+        )
+
+    else:
+        raise ValueError(f"Unknown channel model: {channel_model}")
+    
 def main():
 
 
@@ -25,6 +54,7 @@ def main():
     frame_counter = 0
     
     channel_type = SIMULATION["channel_type"]
+    channel_model = SIMULATION["channel_model"]
     profile = CHANNEL["profile"]
     
     encoder = ChannelCoder(channel_type, is_working=BLOCKS["encoding"]["is_working"])
@@ -46,7 +76,7 @@ def main():
     while not ber_ruler.isStop:
 
         snr_db = ber_ruler.h2dB 
-        channel = GSMChannel(profile, snr_db, is_working=BLOCKS["channel"]["is_working"])
+        channel = create_channel(channel_model, snr_db, profile)
 
         while not ber_ruler.is_point_finished():
 
