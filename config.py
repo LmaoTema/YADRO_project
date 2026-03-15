@@ -11,7 +11,7 @@ BLOCKS = {
     "encoding": {"is_working": False},
     "interleaver": {"is_working": False},
     "modulation": {"is_working": True},
-    "channel": {"is_working": False},
+    "channel": {"is_working": True},
     "equalizer": {"is_working": False},
 }
 
@@ -36,7 +36,7 @@ BER = {
 CHANNEL_MODES = {
     "TCHFS": {
         "scheme": "TCHFS",
-        "frame_bits": 148
+        "frame_bits": 260
     },
    # "CS1": {
     #    "scheme": "CS1",
@@ -58,7 +58,7 @@ MODULATION = {
     "h": 0.5,
     "gaus_duration": 4,
     "rect_duration": 1,
-    "type_demod": "vit_hard" # diff_phase vit_soft vit_hard
+    "type_demod": "diff_phase" # vit_soft
 }
 
 CHANNEL = {
