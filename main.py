@@ -61,7 +61,9 @@ def main():
             rx_signal = channel.process(signal)
             # print(len(rx_signal))
             rx_bits = demodulator.process(rx_signal)
+
             #print(len(rx_bits))
+
             decoded_bits = decoder.process(rx_bits)
 
             if DEBUG_TRACE and frame_counter == TRACE_FRAME:
