@@ -93,28 +93,37 @@ class CRC5350Decoder:
 
         return data
     
+import numpy as np
+
+
 class TCHFSSpeechDecoder:
 
     def __init__(self):
- 
+
         self.deint = SpeechDeinterleaver()
-        self.viterbi = self.viterbi = ViterbiDecoder(constraint_length=5,polynomials=[0x19, 0x1D])
+
+        self.viterbi = ViterbiDecoder(
+            constraint_length=5,
+            polynomials=[0x13, 0x1B]
+        )
+
         self.crc = CRC5350Decoder()
+
 
     def reverse_reordering(self, u):
 
-        class1a_crc = [0]*53
+        class1a_crc = [0] * 53
 
         for k in range(91):
 
             if 2*k < 50:
                 class1a_crc[2*k] = u[k]
 
-            if 2*k+1 < 50:
-                class1a_crc[2*k+1] = u[184-k]
+            if 2*k + 1 < 50:
+                class1a_crc[2*k + 1] = u[184 - k]
 
         for k in range(3):
-            class1a_crc[50+k] = u[91+k]
+            class1a_crc[50 + k] = u[91 + k]
 
         class1b = u[53:185]
 
@@ -132,6 +141,8 @@ class TCHFSSpeechDecoder:
         class2 = bits456[378:]
 
         u = self.viterbi.decode(coded)
+        
+        u = u[:-4]
 
         class1a_crc, class1b = self.reverse_reordering(u)
 
