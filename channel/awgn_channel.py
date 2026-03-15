@@ -1,11 +1,9 @@
 import numpy as np
-from core.block import Block
-
-
-class AWGNChannel(Block):
+class AWGNChannel():
 
 
     def __init__(self, snr_db=20):
+        
         self.snr_db = snr_db
 
     def reset(self):

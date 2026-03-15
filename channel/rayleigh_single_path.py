@@ -1,9 +1,9 @@
 
 import numpy as np
-from core.block import Block
 
 
-class RayleighSinglePathChannel(Block):
+
+class RayleighSinglePathChannel():
     
     def __init__(self, maximum_doppler_shift=0, sample_rate=1e6):
 

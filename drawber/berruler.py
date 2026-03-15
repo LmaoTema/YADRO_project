@@ -13,9 +13,9 @@ class BERRuler:
         h2dB_max=15,
         min_BER=1e-4,
         min_FER=1,
-        min_NumErBits=500,
-        min_NumErFrames=100,
-        min_NumTrFrames=100,
+        min_NumErBits=200,
+        min_NumErFrames=500,
+        min_NumTrFrames=500,
         max_NumTrBits=1e8,
         max_NumTrFrames=np.inf,
         max_BERRate=5,
@@ -113,6 +113,17 @@ class BERRuler:
                 f"Frames = {self.NumTrFrames}"
             )
 
+        if ber < self.MinBER:
+            self.isStop = True
+            if self.log_language.lower() == "Russian":
+                print(
+                    f"{ts} Достигнут предел по BER, вычисления остановлены"
+                )
+            else:
+                print(
+                    f"{ts} BER limit reached, calculations stopped"
+                )
+            
         self._update_snr_step()
 
         self.reset()

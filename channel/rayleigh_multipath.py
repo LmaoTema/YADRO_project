@@ -1,10 +1,9 @@
 
 import numpy as np
-from core.block import Block
 from channel.pdp_profiles import CHANNEL_PROFILES
 
 
-class RayleighMultipathChannel(Block):
+class RayleighMultipathChannel():
 
     def __init__(
         self,
