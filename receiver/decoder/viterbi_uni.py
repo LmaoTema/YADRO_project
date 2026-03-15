@@ -76,9 +76,10 @@ class ViterbiDecoder:
 
                     ns = self.next_state[state, bit]
                     expected = self.output[state, bit]
-
+                    
+                    #expected_sym = 1 - 2*np.array(expected)
+                    #dist = np.sum((r - expected_sym)**2)
                     dist = np.sum(r != expected)
-
                     metric = path_metric[state] + dist
 
                     if metric < new_metric[ns]:
