@@ -23,9 +23,9 @@ BER = {
     "h2dB_max": 9,
     "min_BER": 1e-4,
     "min_FER": 1,
-    "min_NumErBits": 500,
-    "min_NumErFrames": 100,
-    "min_NumTrFrames": 100,
+    "min_NumErBits": 200,
+    "min_NumErFrames": 50,
+    "min_NumTrFrames": 500,
     "max_NumTrBits": 1e8,
     "max_NumTrFrames": float("inf"),
     "max_BERRate": 5,
@@ -36,7 +36,7 @@ BER = {
 CHANNEL_MODES = {
     "TCHFS": {
         "scheme": "TCHFS",
-        "frame_bits": 260
+        "frame_bits": 148
     },
    # "CS1": {
     #    "scheme": "CS1",

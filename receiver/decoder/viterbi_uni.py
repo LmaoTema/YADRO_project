@@ -56,7 +56,7 @@ class ViterbiDecoder:
 
 
     def _hamming(self, a, b):
-        return bin(a ^ b).count("1")
+        return (a ^ b).bit_count()
 
 
     def decode(self, coded_bits):

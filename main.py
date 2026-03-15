@@ -7,44 +7,13 @@ from transmitter.gsm_channel_coding.channel_coder import ChannelCoder
 from transmitter.interleaver.base import Interleaver
 from receiver.decoder.logic import ChannelDecoder
 
-from channel.awgn_channel import AWGNChannel
-from channel.rayleigh_single_path import RayleighSinglePathChannel
-from channel.rayleigh_multipath import RayleighMultipathChannel
+from channel.channel_manager import ChannelBlock
 
 from transmitter.modulator import Modulation
 from receiver.demodulator import Demodulation
 
 from drawber.berruler import BERRuler
 from drawber.plot import plot_ber
-
-#if not BLOCKS["encoding"]:
-#    BLOCKS["interleaver"] = False
-
-def create_channel(channel_model, snr_db, profile):
-
-    if channel_model == "awgn":
-
-        return AWGNChannel(
-            snr_db=snr_db
-        )
-
-    elif channel_model == "rayleigh_single":
-
-        return RayleighSinglePathChannel(
-            maximum_doppler_shift=CHANNEL["doppler"],
-            sample_rate=CHANNEL["sample_rate"]
-        )
-
-    elif channel_model == "rayleigh_multipath":
-
-        return RayleighMultipathChannel(
-            sample_rate=CHANNEL["sample_rate"],
-            profile=profile,
-            maximum_doppler_shift=CHANNEL["doppler"]
-        )
-
-    else:
-        raise ValueError(f"Unknown channel model: {channel_model}")
     
 def main():
 
@@ -76,7 +45,7 @@ def main():
     while not ber_ruler.isStop:
 
         snr_db = ber_ruler.h2dB 
-        channel = create_channel(channel_model, snr_db, profile)
+        channel = ChannelBlock(channel_model, snr_db, profile, is_working=BLOCKS["channel"]["is_working"])
 
         while not ber_ruler.is_point_finished():
 
@@ -91,9 +60,7 @@ def main():
             rx_signal = channel.process(signal)
             # print(len(rx_signal))
             rx_bits = demodulator.process(rx_signal)
-
             #print(len(rx_bits))
-
             decoded_bits = decoder.process(rx_bits)
 
             if DEBUG_TRACE and frame_counter == TRACE_FRAME:
