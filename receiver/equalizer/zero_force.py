@@ -17,7 +17,7 @@ class ZFEqualizer(Block):
 
         H = np.fft.fft(h, len(rx))
         R = np.fft.fft(rx)
-
+        
         S = R / (H + 1e-8)
 
         s = np.fft.ifft(S)

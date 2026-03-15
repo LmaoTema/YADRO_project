@@ -3,7 +3,7 @@ from channel.pdp_profiles import CHANNEL_PROFILES
 
 SIMULATION = {
     "channel_type": "TCHFS",
-    "channel_model": "awgn"
+    "channel_model": "rayleigh_multipath" #rayleigh_single rayleigh_multipath
 }
 
 BLOCKS = {
