@@ -53,17 +53,17 @@ def main():
             bits = np.random.randint(0, 2, frame_bits)
 
             tx_stream = pipeline.run(bits.tolist())
-            #print(len(tx_stream))
+            # print(len(tx_stream))
             tx_stream = np.array(tx_stream)
-            #print(len(tx_stream))
+            # print(len(tx_stream))
             signal = modulator.process(tx_stream)
-            #print(len(signal))
+            # print(len(signal))
             rx_signal = channel.process(signal)
-            #print(len(rx_signal))
+            # print(len(rx_signal))
             rx_bits = demodulator.process(rx_signal)
             #print(len(rx_bits))
             decoded_bits = decoder.process(rx_bits)
-                        
+
             if DEBUG_TRACE and frame_counter == TRACE_FRAME:
                 print("После источника:", bits)
                 print("После кодера:", tx_stream)
