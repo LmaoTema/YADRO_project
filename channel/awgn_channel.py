@@ -17,10 +17,10 @@ class AWGNChannel():
         signal_power = np.mean(np.abs(x) ** 2)
 
         # SNR → линейная шкала
-        snr_linear = 10 ** (self.snr_db / 10)
-
+        snr_linear = 10 ** (self.snr_db / 10)   
+        R = 1/2
         # мощность шума
-        noise_power = signal_power / snr_linear
+        noise_power = signal_power / (snr_linear * R * 50/53)
 
         # шум
         noise = np.sqrt(noise_power / 2) * (np.random.randn(*x.shape) + 1j * np.random.randn(*x.shape))
