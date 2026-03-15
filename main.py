@@ -11,6 +11,8 @@ from channel.awgn_channel import AWGNChannel
 from channel.rayleigh_single_path import RayleighSinglePathChannel
 from channel.rayleigh_multipath import RayleighMultipathChannel
 
+from receiver.equalizer.zero_force import ZFEqualizer
+
 from transmitter.modulator import Modulation
 from receiver.demodulator import Demodulation
 
@@ -69,6 +71,11 @@ def main():
     
     mode_cfg = CHANNEL_MODES[channel_type]
     
+    equalizer = ZFEqualizer(channel_type,is_working=BLOCKS["equalizer"]["is_working"])
+    
+    if SIMULATION["channel_model"] == "awgn":
+        equalizer.is_working = False
+    
     decoder = ChannelDecoder(scheme=mode_cfg["scheme"], is_working=BLOCKS["encoding"]["is_working"])
     frame_bits = CHANNEL_MODES[channel_type]["frame_bits"]
     ber_ruler = BERRuler(**BER)
@@ -77,6 +84,7 @@ def main():
 
         snr_db = ber_ruler.h2dB 
         channel = create_channel(channel_model, snr_db, profile)
+        
 
         while not ber_ruler.is_point_finished():
 
@@ -90,6 +98,7 @@ def main():
             # print(len(signal))
             rx_signal = channel.process(signal)
             # print(len(rx_signal))
+            rx_signal = equalizer.process(rx_signal)
             rx_bits = demodulator.process(rx_signal)
 
             #print(len(rx_bits))
