@@ -19,7 +19,7 @@ BER = {
     "h2dB_init_step": 0.4,
     "h2dB_min_step": 0.1,
     "h2dB_max_step": 1.6,
-    "h2dB_max": 15,
+    "h2dB_max": 9,
     "min_BER": 1e-4,
     "min_FER": 1,
     "min_NumErBits": 500,
@@ -57,7 +57,7 @@ MODULATION = {
     "h": 0.5,
     "gaus_duration": 4,
     "rect_duration": 1,
-    "type_demod": "diff_phase" # vit_soft
+    "type_demod": "vit_hard" # diff_phase vit_soft vit_hard
 }
 
 CHANNEL = {

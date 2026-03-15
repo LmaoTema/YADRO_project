@@ -113,16 +113,28 @@ class GMSKModulation:
         
         if not getattr(self, "is_working", True):
              return np.array(bits, dtype=complex)
-
-        alpha = self.differential_encoding(bits)
-
+        
+        active_size = 148
+        num_bursts = len(bits) // active_size
+    
         g_t = self.gmsk_filter()
+        
+        all_signals = []
+        guard_period = np.zeros(8 * self.sps, dtype=complex)
+        for i in range(num_bursts):
+            burst = bits[i*active_size : (i+1)*active_size]
+            alpha = self.differential_encoding(burst)
+            
+            phi = self.calc_phase(alpha, g_t)
+            signal = self.calc_signal(phi)
+            
+            all_signals.append(signal)
+            
+            all_signals.append(guard_period)
 
-        phi = self.calc_phase(alpha, g_t)
+        
+        return np.concatenate(all_signals)
 
-        signal = self.calc_signal(phi)
-
-        return signal
 
 
 class PSKModulation:
