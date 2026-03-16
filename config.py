@@ -8,10 +8,10 @@ SIMULATION = {
 
 BLOCKS = {
 
-    "encoding": {"is_working": True},
-    "interleaver": {"is_working": True},
+    "encoding": {"is_working": False},
+    "interleaver": {"is_working": False},
     "modulation": {"is_working": True},
-    "channel": {"is_working": True},
+    "channel": {"is_working": False},
     "equalizer": {"is_working": False},
 }
 
@@ -20,7 +20,7 @@ BER = {
     "h2dB_init_step": 0.4,
     "h2dB_min_step": 0.1,
     "h2dB_max_step": 1.6,
-    "h2dB_max": 16,
+    "h2dB_max": 25,
     "min_BER": 1e-4,
     "min_FER": 1,
     "min_NumErBits": 700,
@@ -36,7 +36,7 @@ BER = {
 CHANNEL_MODES = {
     "TCHFS": {
         "scheme": "TCHFS",
-        "frame_bits": 260
+        "frame_bits": 148
     },
    # "CS1": {
     #    "scheme": "CS1",
@@ -53,12 +53,12 @@ CHANNEL_MODES = {
 }
 MODULATION = {
     "BT": 0.3,
-    "T": 1,
-    "sps": 100,
+    "T": 3.69e-6,
+    "sps": 4,
     "h": 0.5,
     "gaus_duration": 4,
     "rect_duration": 1,
-    "type_demod": "diff_phase" # vit_soft
+    "type_demod": "diff_phase" # diff_phase / vit_hard / vit_soft 
 }
 
 CHANNEL = {

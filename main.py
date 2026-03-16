@@ -73,11 +73,11 @@ def main():
 
             if DEBUG_TRACE and frame_counter == TRACE_FRAME:
                 print("После источника:", bits)
-                print("После кодера:", tx_stream)
-                print("После burst mapper", tx_stream)
-                print("После модулятора", signal)
-                print("После канала", rx_signal)
-                print("После демодулятора:", rx_bits)
+                # print("После кодера:", tx_stream)
+                # print("После burst mapper", tx_stream)
+                # print("После модулятора", signal)
+                # print("После канала", rx_signal)
+                # print("После демодулятора:", rx_bits)
                 print("Декодированные:", decoded_bits)
 
             ber_ruler.update_frame(bits, decoded_bits)
