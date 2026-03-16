@@ -3,7 +3,7 @@ import numpy as np
 from core.pipeline import Pipeline
 from config import SIMULATION, CHANNEL, CHANNEL_MODES, BER, BLOCKS, MODULATION
 
-from transmitter.gsm_channel_coding.coder_manager import ChannelCoder
+from transmitter.channel_coder.coder_manager import ChannelCoder
 from transmitter.interleaver.inter_manager import Interleaver
 from receiver.decoder.dec_manager import ChannelDecoder
 

@@ -1,5 +1,3 @@
-
-from core.block import Block
 from .encoder import ConvolutionalEncoder
 
 class CRC5350:
