@@ -28,8 +28,8 @@ class GMSKModulation:
 
     def __init__(self, params):
         self.BT = params.get("BT", 0.3)
-        self.T = params.get("T", 1)
-        self.sps = params.get("sps", 100)
+        self.T = params.get("T", 3.69e-6)
+        self.sps = params.get("sps", 4)
         self.dt = self.T / self.sps
         self.h = params.get("h", 0.5)
         self.gaus_duration = params.get("gaus_duration", 4)
@@ -49,28 +49,35 @@ class GMSKModulation:
 
         return alpha
 
-    def gmsk_filter(self):
+    def generate_q_gmsk(self):
         BT = self.BT
         T = self.T
         dt = self.dt
         gaus_duration = self.gaus_duration
         rect_duration = self.rect_duration
 
+        oversampling = 100
+        sps_oversampling = self.sps * oversampling
+        dt_oversampling = T/sps_oversampling
+
         delta = np.sqrt(np.log(2)) / (2 * np.pi * BT)
 
-        t_h = np.arange(-gaus_duration / 2 * T, gaus_duration / 2 * T, dt)
-        t_rect = np.arange(-rect_duration / 2 * T, rect_duration / 2 * T, dt)
+        t_h = np.arange(-gaus_duration / 2 * T, gaus_duration / 2 * T, dt_oversampling)
+        t_rect = np.arange(-rect_duration / 2 * T, rect_duration / 2 * T, dt_oversampling)
 
         h_t = np.exp(-(t_h**2) / (2 * (delta**2) * (T**2))) / (
             np.sqrt(2 * np.pi) * delta * T
         )
         rect = np.ones(t_rect.size) / T
 
-        g_t = np.convolve(h_t, rect) * dt
+        g_t = np.convolve(h_t, rect) * dt_oversampling
 
-        return g_t
+        q_gmsk_oversampling = np.cumsum(g_t) * dt_oversampling
+        q_gmsk = q_gmsk_oversampling[::oversampling]
 
-    def calc_phase(self, alpha, g_t):
+        return q_gmsk
+
+    def calc_phase(self, alpha, q_gmsk):
         h = self.h
         dt = self.dt
         sps = self.sps
@@ -79,10 +86,8 @@ class GMSKModulation:
 
         alpha_repeat = np.repeat(alpha, sps)
 
-        q_gmsk = np.cumsum(g_t) * dt
-
         num_bits = alpha.size
-        phi = np.zeros(num_bits * sps + q_gmsk.size)
+        phi = np.zeros(num_bits * sps + q_gmsk.size - sps)
 
         #  phase accumulation
         for i in range(num_bits):
@@ -117,22 +122,20 @@ class GMSKModulation:
         active_size = 148
         num_bursts = len(bits) // active_size
     
-        g_t = self.gmsk_filter()
+        q_gmsk = self.generate_q_gmsk()
         
         all_signals = []
         guard_period = np.zeros(8 * self.sps, dtype=complex)
         for i in range(num_bursts):
             burst = bits[i*active_size : (i+1)*active_size]
+
             alpha = self.differential_encoding(burst)
-            
-            phi = self.calc_phase(alpha, g_t)
+            phi = self.calc_phase(alpha, q_gmsk)
             signal = self.calc_signal(phi)
             
             all_signals.append(signal)
-            
             all_signals.append(guard_period)
 
-        
         return np.concatenate(all_signals)
 
 

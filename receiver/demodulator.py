@@ -504,7 +504,7 @@ class GMSKDemodulator(Block):
 
             if self.type_demod == "diff_phase":
 
-                y_k = burst_samples[int(self.sps / 2) :: self.sps]
+                y_k = burst_samples[self.sps - 1 :: self.sps]
 
                 y_k_prev = np.zeros(y_k.size, dtype=complex)
                 y_k_prev[1:] = y_k[:-1]
