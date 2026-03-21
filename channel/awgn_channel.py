@@ -21,7 +21,7 @@ class AWGNChannel():
         R = 1/2
         # мощность шума
         noise_power = signal_power / (snr_linear * R * 50/53)
-
+        #* R * 50/53
         # шум
         noise = np.sqrt(noise_power / 2) * (np.random.randn(*x.shape) + 1j * np.random.randn(*x.shape))
 

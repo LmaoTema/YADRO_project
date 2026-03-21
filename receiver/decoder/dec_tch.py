@@ -1,70 +1,5 @@
 import numpy as np
-
 from .viterbi_uni import ViterbiDecoder
-
-class SpeechDeinterleaver:
-
-    def __init__(self):
-        pass
-            
-
-    def deinterleave_57(self, data):
-
-        out = np.zeros(57, dtype=int)
-
-        for j in range(57):
-            k = (7 * j) % 57
-            out[k] = data[j]
-
-        return out
-
-    def extract_data(self, burst):
-
-        first = burst[3:60]
-        second = burst[87:144]
-
-        return first, second
-
-    def process(self, bits):
-
-        bits = np.array(bits)
-
-        if len(bits) != 592:
-            raise ValueError("Expected 592 bits (4 bursts)")
-
-        bursts = bits.reshape(4, 148)
-
-        subblocks = [None]*8
-
-        for b in range(4):
-
-            first, second = self.extract_data(bursts[b])
-
-            subblocks[b] = self.deinterleave_57(first)
-            subblocks[b+4] = self.deinterleave_57(second)
-
-        bits456 = np.concatenate(subblocks)
-
-        return bits456
-
-def reverse_reordering(u):
-
-    class1a_crc = [0]*53
-
-    for k in range(91):
-
-        if 2*k < 50:
-            class1a_crc[2*k] = u[k]
-
-        if 2*k+1 < 50:
-            class1a_crc[2*k+1] = u[184-k]
-
-    for k in range(3):
-        class1a_crc[50+k] = u[91+k]
-
-    class1b = u[53:185]
-
-    return class1a_crc, class1b
 
 class CRC5350Decoder:
 
@@ -93,14 +28,9 @@ class CRC5350Decoder:
 
         return data
     
-import numpy as np
-
-
 class TCHFSSpeechDecoder:
 
     def __init__(self):
-
-        self.deint = SpeechDeinterleaver()
 
         self.viterbi = ViterbiDecoder(
             constraint_length=5,
@@ -109,47 +39,22 @@ class TCHFSSpeechDecoder:
 
         self.crc = CRC5350Decoder()
 
-
-    def reverse_reordering(self, u):
-
-        class1a_crc = [0] * 53
-
-        for k in range(91):
-
-            if 2*k < 50:
-                class1a_crc[2*k] = u[k]
-
-            if 2*k + 1 < 50:
-                class1a_crc[2*k + 1] = u[184 - k]
-
-        for k in range(3):
-            class1a_crc[50 + k] = u[91 + k]
-
-        class1b = u[53:185]
-
-        return class1a_crc, class1b
-
-
     def process(self, bits):
 
         if not getattr(self, "is_working", True):
             return np.array(bits, dtype=int)
 
-        bits456 = self.deint.process(bits)
+        coded_class1 = bits[:378]  # 378 бит 
+        class2 = bits[378:]        # 78 бит class2
 
-        coded = bits456[:378]
-        class2 = bits456[378:]
+        u = self.viterbi.decode(coded_class1)  
+        u = u[:189]  
 
-        u = self.viterbi.decode(coded)
-        
-        u = u[:-4]
-
-        class1a_crc, class1b = self.reverse_reordering(u)
+        class1a_crc = u[:53]        # 50 + 3 CRC
+        class1b = u[53:185]         # 132 bits
 
         class1a = self.crc.decode(class1a_crc)
-
-        class1b = class1b[:132]
-
+        
         frame = np.array(class1a + class1b + list(class2))
 
         return frame

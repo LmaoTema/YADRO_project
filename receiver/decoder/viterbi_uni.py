@@ -17,7 +17,7 @@ class ViterbiDecoder:
 
 
     def _poly_to_bits(self, poly):
-        return [(poly >> i) & 1 for i in range(self.K)]
+        return [(poly >> (self.K-1-i)) & 1 for i in range(self.K)]
 
 
     def _build_trellis(self):

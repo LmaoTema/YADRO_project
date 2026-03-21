@@ -23,7 +23,7 @@ class TCHFSBlockCoder:
             [1,0,0,1,1],  # G0
             [1,1,0,1,1]   # G1
         ]
-        self.conv = ConvolutionalEncoder(G, 5)  
+        self.conv = ConvolutionalEncoder(G, 5)
 
     def process(self, bits):
         if not getattr(self, "is_working", True):
@@ -32,37 +32,18 @@ class TCHFSBlockCoder:
             raise ValueError("TCH/FS frame must be 260 bits")
 
         class1a = bits[0:50]
-        class1b = bits[50:182]
-        class2  = bits[182:260]
+        class1b = bits[50:182]  # 132 bits
+        class2  = bits[182:260] # 78 bits
 
-        class1a_crc = self.crc.encode(class1a)  # 53 bits
-        # Reordering 
-        u = [0]*189  # class1: 189 bits including parity + tail
+        
+        class1a_crc = self.crc.encode(class1a)[50:]  
 
-        for k in range(91):
-            if 2*k < 50:
-                u[k] = class1a_crc[2*k]       # even bits
-            if 2*k+1 < 50:
-                u[184-k] = class1a_crc[2*k+1] # odd bits
+        u = class1a + list(class1a_crc) + class1b  
+        tail_bits = [0]*4
+        u += tail_bits 
 
-        for k in range(3):
-            u[91+k] = class1a_crc[50+k]
+        coded_class1 = self.conv.process(u)  
 
-        for k in range(185,189):
-            u[k] = 0
-
-        coded = []
-        for k in range(189):
-            u_k   = u[k]
-            u_k1  = u[k-1] if k-1 >= 0 else 0
-            u_k3  = u[k-3] if k-3 >= 0 else 0
-            u_k4  = u[k-4] if k-4 >= 0 else 0
-
-            c0 = u_k ^ u_k3 ^ u_k4
-            c1 = u_k ^ u_k1 ^ u_k3 ^ u_k4
-            coded.append(c0)
-            coded.append(c1)
-            
-        frame = coded + class2  # 378 + 78 = 456 bits class1+class2
-
+        # 4️⃣ Итоговый frame
+        frame = list(coded_class1) + list(class2)  # 378 + 78 = 456 
         return frame

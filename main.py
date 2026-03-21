@@ -6,6 +6,7 @@ from config import SIMULATION, CHANNEL, CHANNEL_MODES, BER, BLOCKS, MODULATION
 from transmitter.channel_coder.coder_manager import ChannelCoder
 from transmitter.interleaver.inter_manager import Interleaver
 from receiver.decoder.dec_manager import ChannelDecoder
+from receiver.deinterleaver.deinter_manager import Deinterleaver
 
 from channel.channel_manager import ChannelBlock
 
@@ -30,22 +31,26 @@ def main():
     
     encoder = ChannelCoder(channel_type, is_working=BLOCKS["encoding"]["is_working"])
     interleaver = Interleaver(channel_type, is_working=BLOCKS["interleaver"]["is_working"])
-    pipeline = Pipeline([encoder, interleaver])
-
-
+    pipeline_Tx = Pipeline([encoder, interleaver])
+    
+    mode_cfg = CHANNEL_MODES[channel_type]
+    
+    deinterv = Deinterleaver(channel_type, is_working=BLOCKS["interleaver"]["is_working"])
+    decoder = ChannelDecoder(scheme=mode_cfg["scheme"], is_working=BLOCKS["encoding"]["is_working"])
+    pipeline_Rx = Pipeline([deinterv, decoder])
+    
+    
     params_modulation = MODULATION
     modulator = Modulation(channel_type, params_modulation, is_working=BLOCKS["modulation"]["is_working"])
     demodulator = Demodulation(channel_type, params_modulation, is_working=BLOCKS["modulation"]["is_working"])
 
     
-    mode_cfg = CHANNEL_MODES[channel_type]
     
     equalizer = ZFEqualizer(channel_type,is_working=BLOCKS["equalizer"]["is_working"])
     
     if SIMULATION["channel_model"] == "awgn":
         equalizer.is_working = False
     
-    decoder = ChannelDecoder(scheme=mode_cfg["scheme"], is_working=BLOCKS["encoding"]["is_working"])
     frame_bits = CHANNEL_MODES[channel_type]["frame_bits"]
     ber_ruler = BERRuler(**BER)
 
@@ -58,22 +63,22 @@ def main():
 
             bits = np.random.randint(0, 2, frame_bits)
 
-            tx_stream = pipeline.run(bits.tolist())
-            # print(len(tx_stream))
+            tx_stream = pipeline_Tx.run(bits.tolist())
+            #print(len(tx_stream))
             tx_stream = np.array(tx_stream)
-            # print(len(tx_stream))
+            #print(len(tx_stream))
             signal = modulator.process(tx_stream)
-            # print(len(signal))
+            #print(len(signal))
             rx_signal = channel.process(signal)
-            # print(len(rx_signal))
+            #print(len(rx_signal))
             rx_signal = equalizer.process(rx_signal)
             rx_bits = demodulator.process(rx_signal)
-            #print(len(rx_bits))
-            decoded_bits = decoder.process(rx_bits)
+            #rint(len(rx_bits))
+            decoded_bits = pipeline_Rx.run(rx_bits)
 
             if DEBUG_TRACE and frame_counter == TRACE_FRAME:
                 print("После источника:", bits)
-                # print("После кодера:", tx_stream)
+                #print("После кодера:", tx_stream)
                 # print("После burst mapper", tx_stream)
                 # print("После модулятора", signal)
                 # print("После канала", rx_signal)
