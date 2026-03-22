@@ -48,8 +48,8 @@ def main():
     
     equalizer = ZFEqualizer(channel_type,is_working=BLOCKS["equalizer"]["is_working"])
     
-    if SIMULATION["channel_model"] == "awgn":
-        equalizer.is_working = False
+  #  if SIMULATION["channel_model"] == "awgn":
+  #      equalizer.is_working = False
     
     frame_bits = CHANNEL_MODES[channel_type]["frame_bits"]
     ber_ruler = BERRuler(**BER)

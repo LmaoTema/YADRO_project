@@ -12,7 +12,8 @@ class ChannelEstimator:
 
         rx_train = burst[self.train_start:self.train_end]
 
-        tx_train = self.tx_train
+        #tx_train = self.tx_train
+        tx_train = 2*self.tx_train - 1
 
         N = len(tx_train)
 
