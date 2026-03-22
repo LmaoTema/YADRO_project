@@ -100,7 +100,7 @@ class BERRuler:
 
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        if self.log_language.lower() == "Russian":
+        if self.log_language== "Russian":
             print(
                 f"{ts} | Точка завершена: h2 = {self.h2dB:.2f} дБ | "
                 f"BER = {ber:.3e} | FER = {fer:.3e} | "
@@ -115,7 +115,7 @@ class BERRuler:
 
         if ber < self.MinBER:
             self.isStop = True
-            if self.log_language.lower() == "Russian":
+            if self.log_language == "Russian":
                 print(
                     f"{ts} Достигнут предел по BER, вычисления остановлены"
                 )
