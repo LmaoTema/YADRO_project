@@ -2,27 +2,33 @@ import numpy as np
 class AWGNChannel():
 
 
-    def __init__(self, snr_db=20):
+    def __init__(self, snr_db=20, code_rate = 1.0, bits_per_symbol = 1, burst_eff = 1.0):
         
         self.snr_db = snr_db
-
-    def reset(self):
-        pass
+        self.code_rate = code_rate
+        self.bits_per_symbol = bits_per_symbol
+        self.burst_eff = burst_eff
 
     def process(self, x):
 
-        x = np.asarray(x)
+        x = np.asarray(x, dtype = complex)
 
-        # мощность сигнала
-        signal_power = np.mean(np.abs(x) ** 2)
-
+        # Средняя мощность сигнала
+        Ps = np.mean(np.abs(x)**2)
+        
+        Pb = Ps / self.bits_per_symbol
+        
+        eff_rate = self.code_rate * self.burst_eff
+        Pbd = Pb / eff_rate
+        
         # SNR → линейная шкала
         snr_linear = 10 ** (self.snr_db / 10)   
-        R = 1/2
-        # мощность шума
-        noise_power = signal_power / (snr_linear * R * 50/53)
-        #* R * 50/53
+        
+        
+        # Дисперсия шума
+        noise_var = Pbd / snr_linear
+        
         # шум
-        noise = np.sqrt(noise_power / 2) * (np.random.randn(*x.shape) + 1j * np.random.randn(*x.shape))
+        noise = np.sqrt(noise_var / 2) * (np.random.randn(*x.shape) + 1j * np.random.randn(*x.shape))
 
         return x + noise

@@ -69,7 +69,7 @@ def main():
             #print(len(tx_stream))
             signal = modulator.process(tx_stream)
             #print(len(signal))
-            rx_signal = channel.process(signal)
+            rx_signal = channel.process(signal, code_rate = 1/2, bits_per_symbol = 1, burst_eff = 50/53)
             #print(len(rx_signal))
             rx_signal = equalizer.process(rx_signal)
             rx_bits = demodulator.process(rx_signal)
