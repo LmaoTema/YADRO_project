@@ -1,14 +1,14 @@
 
-SIMULATION = {
+simulation_params = {
     "channel_type": "TCHFS",
     "channel_model": "awgn" # rayleigh_single, rayleigh_multipath, awgn
 }
 
-BLOCKS = {
+block_params = {
 
     "encoding": {"is_working": True},
     "interleaver": {"is_working": True},
-    "modulation": {"is_working": False},
+    "modulation": {"is_working": True},
     "channel": {"is_working": False},
     "equalizer": {"is_working": False},
 }
@@ -31,7 +31,7 @@ BER = {
     "log_language": "Russian"
 }
 
-CHANNEL_MODES = {
+mode_params = {
     "TCHFS": {
         "scheme": "TCHFS",
         "frame_bits": 260
@@ -49,7 +49,8 @@ CHANNEL_MODES = {
      #   "frame_bits": MSC_PARAMS["MCS5"]["header_bits"] + MSC_PARAMS["MCS5"]["data_bits"]
     #}
 }
-MODULATION = {
+
+modulation_params = {
     "BT": 0.3,
     "T": 3.69e-6,
     "sps": 4,
@@ -59,12 +60,8 @@ MODULATION = {
     "type_demod": "diff_phase" # diff_phase / vit_hard / vit_soft 
 }
 
-CHANNEL = {
+channel_params = {
     "profile": "TU",        # TU / RA / HT
     "sample_rate": 1e6,
     "doppler": 100
-}
-DEBUG = {
-    "print_crc_errors": False,
-    "log_pipeline": False
 }
