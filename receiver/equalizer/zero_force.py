@@ -5,13 +5,12 @@ from receiver.equalizer.channel_estimator import ChannelEstimator
 
 class ZFEqualizer(Block):
 
-    def __init__(self, channel_type, is_working=True):
+    def __init__(self, modulation_params, is_working=True):
 
         super().__init__(is_working)
 
-        self.channel_type = channel_type
-
-        self.estimator = ChannelEstimator()
+        self.sps = modulation_params.get("sps", 4)
+        self.estimator = ChannelEstimator(modulation_params)
 
     def equalize(self, rx, h):
 
@@ -24,21 +23,25 @@ class ZFEqualizer(Block):
 
         return s
 
-    def _process(self, burst):
+    def process(self, tx_signal, rx_signal):
 
         if not self.is_working:
-            return burst
+            return rx_signal
 
-        # если AWGN → эквализация не нужна
-        if self.channel_type == "awgn":
-            return burst
+        samples_per_burst = 156 * self.sps
+        num_bursts = len(rx_signal) // samples_per_burst
 
-        burst = np.array(burst)
+        eq_signal = []
+        for b in range(num_bursts):
+            start_idx = b * samples_per_burst
+            end_idx = (b + 1) * samples_per_burst
+    
+            tx_burst = tx_signal[start_idx : end_idx]
+            rx_burst = rx_signal[start_idx  : end_idx]
 
-        # оценка канала
-        h_est = self.estimator.estimate(burst)
+            h_est = self.estimator.estimate(tx_burst, rx_burst)
 
-        # эквализация
-        burst_eq = self.equalize(burst, h_est)
+            eq_burst= self.equalize(rx_burst, h_est)
+            eq_signal.append(eq_burst)
 
-        return burst_eq
+        return np.concatenate(eq_signal)

@@ -41,7 +41,7 @@ def main():
     modulator = Modulation(channel_type, modulation_params, is_working=block_params["modulation"]["is_working"])
     demodulator = Demodulation(channel_type, modulation_params, is_working=block_params["modulation"]["is_working"])
 
-    equalizer = ZFEqualizer(channel_type,is_working=block_params["equalizer"]["is_working"])
+    equalizer = ZFEqualizer(modulation_params, is_working=block_params["equalizer"]["is_working"])
     
     ber_ruler = BERRuler(**BER)
 
@@ -56,11 +56,11 @@ def main():
 
             tx_stream = pipeline_Tx.run(bits.tolist())
 
-            signal = modulator.process(np.array(tx_stream))
+            tx_signal = modulator.process(np.array(tx_stream))
 
-            rx_signal = channel.process(signal)
+            rx_signal = channel.process(tx_signal)
 
-            eq_signal = equalizer.process(rx_signal)
+            eq_signal = equalizer.process(tx_signal, rx_signal)
 
             rx_bits = demodulator.process(eq_signal)
 
@@ -69,7 +69,7 @@ def main():
             if DEBUG_TRACE and frame_counter == TRACE_FRAME:
                 print("После источника:", bits)
                 # print("После кодера:", tx_stream)
-                # print("После модулятора", signal)
+                # print("После модулятора", tx_signal)
                 # print("После канала", rx_signal)
                 # print("После демодулятора:", rx_bits)
                 print("Декодированные:", decoded_bits)
