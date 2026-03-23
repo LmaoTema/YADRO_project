@@ -44,6 +44,6 @@ class TCHFSBlockCoder:
 
         coded_class1 = self.conv.process(u)  
 
-        # 4️⃣ Итоговый frame
+        # Итоговый frame
         frame = list(coded_class1) + list(class2)  # 378 + 78 = 456 
         return frame

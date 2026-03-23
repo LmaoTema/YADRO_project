@@ -119,6 +119,8 @@ class GMSKModulation:
         if not getattr(self, "is_working", True):
              return np.array(bits, dtype=complex)
         
+        # Делим на 148, а не 156, что бы без кодера тоже работало
+        # Так как берем целую часть, то на результат не влияет 
         active_size = 148
         num_bursts = len(bits) // active_size
     
@@ -126,8 +128,10 @@ class GMSKModulation:
         
         all_signals = []
         guard_period = np.zeros(8 * self.sps, dtype=complex)
+        gp_len = 0
         for i in range(num_bursts):
-            burst = bits[i*active_size : (i+1)*active_size]
+            burst = bits[gp_len + i*active_size : gp_len + (i+1)*active_size]
+            gp_len += 8
 
             alpha = self.differential_encoding(burst)
             phi = self.calc_phase(alpha, q_gmsk)

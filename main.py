@@ -20,7 +20,6 @@ from drawber.plot import plot_ber
     
 def main():
 
-
     DEBUG_TRACE = True
     TRACE_FRAME = 0
     frame_counter = 0
@@ -39,17 +38,11 @@ def main():
     decoder = ChannelDecoder(scheme=mode_cfg["scheme"], is_working=BLOCKS["encoding"]["is_working"])
     pipeline_Rx = Pipeline([deinterv, decoder])
     
-    
     params_modulation = MODULATION
     modulator = Modulation(channel_type, params_modulation, is_working=BLOCKS["modulation"]["is_working"])
     demodulator = Demodulation(channel_type, params_modulation, is_working=BLOCKS["modulation"]["is_working"])
 
-    
-    
     equalizer = ZFEqualizer(channel_type,is_working=BLOCKS["equalizer"]["is_working"])
-    
-  #  if SIMULATION["channel_model"] == "awgn":
-  #      equalizer.is_working = False
     
     frame_bits = CHANNEL_MODES[channel_type]["frame_bits"]
     ber_ruler = BERRuler(**BER)
@@ -64,23 +57,21 @@ def main():
             bits = np.random.randint(0, 2, frame_bits)
 
             tx_stream = pipeline_Tx.run(bits.tolist())
-            #print(len(tx_stream))
             tx_stream = np.array(tx_stream)
-            #print(len(tx_stream))
+
             signal = modulator.process(tx_stream)
-            #print(len(signal))
-            #, code_rate = 1/2, bits_per_symbol = 1, burst_eff = 50/53
+
             rx_signal = channel.process(signal)
-            #print(len(rx_signal))
-            rx_signal = equalizer.process(rx_signal)
-            rx_bits = demodulator.process(rx_signal)
-            #rint(len(rx_bits))
+
+            eq_signal = equalizer.process(rx_signal)
+
+            rx_bits = demodulator.process(eq_signal)
+
             decoded_bits = pipeline_Rx.run(rx_bits)
 
             if DEBUG_TRACE and frame_counter == TRACE_FRAME:
                 print("После источника:", bits)
-                #print("После кодера:", tx_stream)
-                # print("После burst mapper", tx_stream)
+                # print("После кодера:", tx_stream)
                 # print("После модулятора", signal)
                 # print("После канала", rx_signal)
                 # print("После демодулятора:", rx_bits)
