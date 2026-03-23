@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 from config import simulation_params
+=======
+from config import simulation_params, channel_params
+>>>>>>> 0c0f62dcd6b5ea570e285cafa61e8fc1556a8f0a
 from core.block import Block
 from channel.awgn_channel import AWGNChannel
 from channel.rayleigh_single_path import RayleighSinglePathChannel
@@ -17,16 +21,16 @@ class ChannelBlock(Block):
 
         elif channel_model == "rayleigh_single":
             self.channel = RayleighSinglePathChannel(
-                maximum_doppler_shift=simulation_params["doppler"],
-                sample_rate=simulation_params["sample_rate"]
+                maximum_doppler_shift=channel_params["doppler"],
+                sample_rate=channel_params["sample_rate"]
             )
 
         elif channel_model == "rayleigh_multipath":
             self.channel = RayleighMultipathChannel(
-                sample_rate=simulation_params["sample_rate"],
+                sample_rate=channel_params["sample_rate"],
                 snr_db=self.snr_db,
                 profile=self.profile,
-                maximum_doppler_shift=simulation_params["doppler"]
+                maximum_doppler_shift=channel_params["doppler"]
             )
         else:
             raise ValueError(f"Unknown channel model: {channel_model}")
