@@ -1,8 +1,5 @@
-<<<<<<< HEAD
-from config import simulation_params
-=======
+
 from config import simulation_params, channel_params
->>>>>>> 0c0f62dcd6b5ea570e285cafa61e8fc1556a8f0a
 from core.block import Block
 from channel.awgn_channel import AWGNChannel
 from channel.rayleigh_single_path import RayleighSinglePathChannel
