@@ -2,7 +2,7 @@ import numpy as np
 class AWGNChannel():
 
 
-    def __init__(self, snr_db=20, code_rate = 1.0, bits_per_symbol = 1, burst_eff = 1.0):
+    def __init__(self, snr_db = 20, code_rate = 1.0, bits_per_symbol = 1, burst_eff = 1.0):
         
         self.snr_db = snr_db
         self.code_rate = code_rate
