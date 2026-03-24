@@ -1,10 +1,12 @@
 from core.block import Block
 import matplotlib.pyplot as plt
-import numpy as np
 
-def plot_ber(h2dBs, BERs, FERs, channel_type="Channel"):
+def plot_ber(h2dBs, BERs, BERs_uncoded, channel_type="TCH/FS"):
     plt.figure(figsize=(8,5))
-    plt.semilogy(h2dBs, BERs, 'o-', label='BER')
+    
+    plt.semilogy(h2dBs, BERs, 'o-', label='Coded BER')
+    plt.semilogy(h2dBs, BERs_uncoded, 's--', label='Uncoded BER')
+
     plt.grid(True, which='both', linestyle='--', alpha=0.5)
     plt.xlabel('h2 [dB]')
     plt.ylabel('BER')
