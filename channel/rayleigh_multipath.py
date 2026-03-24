@@ -5,14 +5,7 @@ from channel.pdp_profiles import CHANNEL_PROFILES
 
 class RayleighMultipathChannel():
 
-    def __init__(
-        self,
-        sample_rate,
-        snr_db,
-        profile="TU",
-        maximum_doppler_shift=100,
-        filter_length=21
-    ):
+    def __init__(self, sample_rate, snr_db, profile = "TU", maximum_doppler_shift = 100, filter_length = 21):
 
         self.fs = sample_rate
         self.snr_db = snr_db

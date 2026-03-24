@@ -10,25 +10,20 @@ class AWGNChannel():
         self.burst_eff = burst_eff
 
     def process(self, x):
-
         x = np.asarray(x, dtype = complex)
 
         # Средняя мощность сигнала
         Ps = np.mean(np.abs(x)**2)
-        
-        Pb = Ps / self.bits_per_symbol
-        
-        eff_rate = self.code_rate * self.burst_eff
+        Pb = Ps / self.bits_per_symbol                  # мощность на бит
+        eff_rate = self.code_rate * self.burst_eff      # мощность на декодируемый бит
         Pbd = Pb / eff_rate
         
         # SNR → линейная шкала
         snr_linear = 10 ** (self.snr_db / 10)   
-        
-        
         # Дисперсия шума
         noise_var = Pbd / snr_linear
         
-        # шум
+        # Шум
         noise = np.sqrt(noise_var / 2) * (np.random.randn(*x.shape) + 1j * np.random.randn(*x.shape))
 
         return x + noise
