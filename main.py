@@ -47,7 +47,16 @@ def main():
     while not ber_ruler.isStop:
 
         snr_db = ber_ruler.h2dB 
+<<<<<<< HEAD
+        channel = ChannelBlock(channel_model, snr_db, 
+                code_rate = 1/2, 
+                bits_per_symbol = 1, 
+                burst_eff = 50/53, 
+                profile = "TU", 
+                is_working=BLOCKS["channel"]["is_working"])
+=======
         channel = ChannelBlock(channel_model, snr_db, profile, is_working=block_params["channel"]["is_working"])
+>>>>>>> 07af53daeecbcaae744f9a55f7d222f89068c501
 
         while not ber_ruler.is_point_finished():
 
