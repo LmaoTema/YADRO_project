@@ -19,7 +19,7 @@ BER = {
     "h2dB_init_step": 0.4,
     "h2dB_min_step": 0.1,
     "h2dB_max_step": 1.6,
-    "h2dB_max": 15,
+    "h2dB_max": 25,
     "min_BER": 1e-3,
     "min_FER": 1,
     "min_NumErBits": 700,

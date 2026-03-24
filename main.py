@@ -32,11 +32,9 @@ def main():
     
     encoder = ChannelCoder(channel_type, is_working=block_params["encoding"]["is_working"])
     interleaver = Interleaver(channel_type, is_working=block_params["interleaver"]["is_working"])
-    pipeline_Tx = Pipeline([encoder, interleaver])
     
     deinterv = Deinterleaver(channel_type, is_working=block_params["interleaver"]["is_working"])
     decoder = ChannelDecoder(scheme=mode_cfg["scheme"], is_working=block_params["encoding"]["is_working"])
-    pipeline_Rx = Pipeline([deinterv, decoder])
     
     modulator = Modulation(channel_type, modulation_params, is_working=block_params["modulation"]["is_working"])
     demodulator = Demodulation(channel_type, modulation_params, is_working=block_params["modulation"]["is_working"])
@@ -44,7 +42,8 @@ def main():
     equalizer = ZFEqualizer(modulation_params, is_working=block_params["equalizer"]["is_working"])
     
     ber_ruler = BERRuler(**BER)
-
+    ber_ruler_uncoded = BERRuler(**BER) 
+    
     while not ber_ruler.isStop:
 
         snr_db = ber_ruler.h2dB 
@@ -59,8 +58,10 @@ def main():
 
             bits = np.random.randint(0, 2, frame_bits)
 
-            tx_stream = pipeline_Tx.run(bits.tolist())
-
+            bits_cd = encoder.process(bits.tolist())
+            
+            tx_stream = interleaver.process(bits_cd)
+            
             tx_signal = modulator.process(np.array(tx_stream))
 
             rx_signal = channel.process(tx_signal)
@@ -68,8 +69,10 @@ def main():
             eq_signal = equalizer.process(tx_signal, rx_signal)
 
             rx_bits = demodulator.process(eq_signal)
+            
+            bits_deintr = deinterv.process(rx_bits)
 
-            decoded_bits = pipeline_Rx.run(rx_bits)
+            decoded_bits = decoder.process(bits_deintr)
 
             if DEBUG_TRACE and frame_counter == TRACE_FRAME:
                 print("После источника:", bits)
@@ -80,15 +83,18 @@ def main():
                 print("Декодированные:", decoded_bits)
 
             ber_ruler.update_frame(bits, decoded_bits)
+            
+            ber_ruler_uncoded.update_frame(bits_cd, bits_deintr)
             frame_counter += 1
 
         ber_ruler.finalize_point()
+        ber_ruler_uncoded.finalize_point()
 
     snr, ber, fer = ber_ruler.get_results()
+    snr, ber_u, fer_u = ber_ruler_uncoded.get_results()
 
-    plot_ber(snr, ber, fer)
-
-    return snr, ber, fer
+    plot_ber(snr, ber, ber_u)
+    return snr, ber, fer, ber_u, fer_u 
 
 if __name__ == "__main__":
     main()
