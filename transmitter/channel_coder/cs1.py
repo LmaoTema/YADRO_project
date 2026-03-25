@@ -33,16 +33,6 @@ class CS1BlockCoder:
         tail = [0,0,0,0]
         u = block224 + tail  # 228 bits
 
-        coded = []
-        for k in range(228):
-            u_k   = u[k]
-            u_k1  = u[k-1] if k-1 >= 0 else 0
-            u_k3  = u[k-3] if k-3 >= 0 else 0
-            u_k4  = u[k-4] if k-4 >= 0 else 0
-
-            c0 = u_k ^ u_k3 ^ u_k4
-            c1 = u_k ^ u_k1 ^ u_k3 ^ u_k4
-            coded.append(c0)
-            coded.append(c1)
-
+        coded = self.conv.process(u)
+    
         return coded
