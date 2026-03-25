@@ -13,7 +13,7 @@ from channel.channel_manager import ChannelBlock
 from receiver.equalizer.equalizer_manager import Equalizer
 
 from transmitter.modulator import Modulation
-from receiver.demodulator import Demodulation
+from receiver.detector.det_manager import Detector
 
 from drawber.berruler import BERRuler
 from drawber.plot import plot_ber
@@ -37,7 +37,7 @@ def main():
     decoder = ChannelDecoder(scheme=mode_cfg["scheme"], is_working=block_params["encoding"]["is_working"])
     
     modulator = Modulation(channel_type, modulation_params, is_working=block_params["modulation"]["is_working"])
-    demodulator = Demodulation(channel_type, modulation_params, is_working=block_params["modulation"]["is_working"])
+    detector = Detector(channel_type, modulation_params, is_working=block_params["modulation"]["is_working"])
 
     equalizer = Equalizer(equalizer_params, modulation_params, is_working=block_params["equalizer"]["is_working"])
     
@@ -63,7 +63,7 @@ def main():
 
             eq_signal = equalizer.process(rx_signal, tx_signal)
 
-            rx_bits = demodulator.process(eq_signal)
+            rx_bits = detector.process(eq_signal)
             
             bits_deintr = deinterv.process(rx_bits)
 

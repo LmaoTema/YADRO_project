@@ -116,9 +116,6 @@ class GMSKModulation:
 
     def process_mod(self, bits):
         
-        if not getattr(self, "is_working", True):
-            return np.array(bits, dtype=complex)
-        
         # Делим на 148, а не 156, что бы без кодера тоже работало
         # Так как берем целую часть, то на результат не влияет 
         active_size = 148
