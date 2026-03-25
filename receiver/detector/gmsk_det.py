@@ -32,23 +32,65 @@ class GMSKDetector:
 
         return g_t
 
-    def calc_rhh(self, g_t):
-        # In general, rhh should be defined in the TSC
-        dt = self.dt
-        sps = self.sps
-        gaus_duration = self.gaus_duration
-        rect_duration = self.rect_duration
+    def calc_increment(self, rhh):
+        # Определяем влияние предыдущих бит для каждого состояния
+        increment = np.zeros(16)
+        increment[0] = rhh[4].real + rhh[3].imag + rhh[2].real + rhh[1].imag
+        increment[1] = rhh[4].real + rhh[3].imag + rhh[2].real - rhh[1].imag
+        increment[2] = rhh[4].real + rhh[3].imag - rhh[2].real + rhh[1].imag
+        increment[3] = rhh[4].real + rhh[3].imag - rhh[2].real - rhh[1].imag
+        increment[4] = rhh[4].real - rhh[3].imag + rhh[2].real + rhh[1].imag
+        increment[5] = rhh[4].real - rhh[3].imag + rhh[2].real - rhh[1].imag
+        increment[6] = rhh[4].real - rhh[3].imag - rhh[2].real + rhh[1].imag
+        increment[7] = rhh[4].real - rhh[3].imag - rhh[2].real - rhh[1].imag
+        increment[8] = - increment[7]
+        increment[9] = - increment[6]
+        increment[10] = - increment[5]
+        increment[11] = - increment[4]
+        increment[12] = - increment[3]
+        increment[13] = - increment[2]
+        increment[14] = - increment[1]
+        increment[15] = - increment[0]
 
-        rhh_full = np.convolve(g_t, g_t[::-1]) * dt
-        center_idx = int(rhh_full.size / 2)
+        return increment
 
-        rhh = np.zeros(5, dtype=complex)
-        for k in range(5):
-            rhh[k] = rhh_full[center_idx + k * sps]
+    def calc_metric(self, increment, sampled_signal, start_state=0):
+        # Расчет метрик для всех возможных состояний
+        old_path_metrics = np.ones(16) * -1e30
+        old_path_metrics[start_state] = 0.0
+        new_path_metrics = np.zeros(16)
 
-        rhh /= rhh[0].real
+        samples_num = sampled_signal.size
 
-        return rhh
+        trans_table = np.zeros((samples_num, 16))
+
+        sample_nr = 0
+
+        while sample_nr < samples_num:
+            # Мнимая часть
+            input_symbol_imag = sampled_signal[sample_nr].imag
+
+            for i in range(8):
+                pm_candidate1 = old_path_metrics[i] + input_symbol_imag - increment[i]
+                pm_candidate2 = old_path_metrics[i + 8] + input_symbol_imag - increment[i + 8]
+                paths_difference = pm_candidate2 - pm_candidate1
+                if paths_difference < 0:
+                    new_path_metrics[2 * i] = pm_candidate1
+                else:
+                    new_path_metrics[2 * i] = pm_candidate2
+                trans_table[sample_nr][2 * i] = paths_difference
+
+                pm_candidate1 = old_path_metrics[i] - input_symbol_imag - increment[i]
+                pm_candidate2 = old_path_metrics[i + 8] - input_symbol_imag - increment[i + 8]
+                paths_difference = pm_candidate2 - pm_candidate1
+                if paths_difference < 0:
+                    new_path_metrics[2 * i + 1] = pm_candidate1
+                else:
+                    new_path_metrics[2 * i + 1] = pm_candidate2
+                trans_table[sample_nr][2 * i + 1] = paths_difference
+
+            # Обновление метрик - переход к вещестенной части
+            sample_nr += 1
 
     def diff_phase(self, burst_samples):
         y_k = burst_samples[self.sps - 1 :: self.sps]

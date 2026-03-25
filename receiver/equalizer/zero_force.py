@@ -1,11 +1,10 @@
 import numpy as np
-from core.block import Block
-from receiver.equalizer.channel_estimator import ChannelEstimator
+from .channel_estimator import ChannelEstimator
 
 
-class ZFEqualizer(Block):
+class ZFEqualizer:
 
-    def __init__(self, modulation_params, is_working=True):
+    def __init__(self, modulation_params):
         self.sps = modulation_params.get("sps", 4)
         self.estimator = ChannelEstimator(modulation_params)
 

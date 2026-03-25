@@ -1,6 +1,7 @@
 import numpy as np
 from core.block import Block
-from receiver.equalizer.zero_force import ZFEqualizer
+from .zero_force import ZFEqualizer
+from .mlse import MLSEEqualizer
 
 class Equalizer(Block):
 
