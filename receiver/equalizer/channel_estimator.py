@@ -1,6 +1,4 @@
 import numpy as np
-from transmitter.modulator import Modulation
-
 
 class ChannelEstimator:
 

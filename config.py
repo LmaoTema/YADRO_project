@@ -10,7 +10,7 @@ block_params = {
     "interleaver": {"is_working": True},
     "modulation": {"is_working": True},
     "channel": {"is_working": True},
-    "equalizer": {"is_working": False},
+    "equalizer": {"is_working": True},
 }
 
 BER = {
@@ -60,6 +60,10 @@ modulation_params = {
     "type_demod": "diff_phase" # diff_phase / vit_hard / vit_soft 
 }
 
+equalizer_params = {
+    "equalizer_type": "ZF" # ZF / MMSE / DFE / MLSE
+}
+
 channel_params = {
     "code_rate": 260/456, 
     "bits_per_symbol": 1, 
@@ -68,3 +72,4 @@ channel_params = {
     "sample_rate": 1e6,
     "doppler": 100
 }
+

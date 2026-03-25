@@ -1,7 +1,7 @@
 import numpy as np
 
 from core.pipeline import Pipeline
-from config import simulation_params, channel_params, mode_params, BER, block_params, modulation_params
+from config import simulation_params, channel_params, mode_params, BER, block_params, modulation_params, equalizer_params
 
 from transmitter.channel_coder.coder_manager import ChannelCoder
 from transmitter.interleaver.inter_manager import Interleaver
@@ -10,7 +10,7 @@ from receiver.deinterleaver.deinter_manager import Deinterleaver
 
 from channel.channel_manager import ChannelBlock
 
-from receiver.equalizer.zero_force import ZFEqualizer
+from receiver.equalizer.equalizer_manager import Equalizer
 
 from transmitter.modulator import Modulation
 from receiver.demodulator import Demodulation
@@ -39,7 +39,7 @@ def main():
     modulator = Modulation(channel_type, modulation_params, is_working=block_params["modulation"]["is_working"])
     demodulator = Demodulation(channel_type, modulation_params, is_working=block_params["modulation"]["is_working"])
 
-    equalizer = ZFEqualizer(modulation_params, is_working=block_params["equalizer"]["is_working"])
+    equalizer = Equalizer(equalizer_params, modulation_params, is_working=block_params["equalizer"]["is_working"])
     
     ber_ruler = BERRuler(**BER)
     ber_ruler_uncoded = BERRuler(**BER, enable_log=False) 
@@ -61,7 +61,7 @@ def main():
 
             rx_signal = channel.process(tx_signal)
 
-            eq_signal = equalizer.process(tx_signal, rx_signal)
+            eq_signal = equalizer.process(rx_signal, tx_signal)
 
             rx_bits = demodulator.process(eq_signal)
             

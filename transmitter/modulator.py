@@ -21,7 +21,7 @@ class Modulation(Block):
 
     def _process(self, bits):
 
-        return self.modulator.process(bits)
+        return self.modulator.process_mod(bits)
 
 
 class GMSKModulation:
@@ -114,10 +114,10 @@ class GMSKModulation:
 
         return x_t
 
-    def process(self, bits):
+    def process_mod(self, bits):
         
         if not getattr(self, "is_working", True):
-             return np.array(bits, dtype=complex)
+            return np.array(bits, dtype=complex)
         
         # Делим на 148, а не 156, что бы без кодера тоже работало
         # Так как берем целую часть, то на результат не влияет 

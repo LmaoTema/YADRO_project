@@ -22,7 +22,7 @@ class Demodulation(Block):
 
     def _process(self, signal):
 
-        return self.demodulator.process(signal)
+        return self.demodulator.process_demod(signal)
 
 
 class GMSKDemodulator(Block):
@@ -481,7 +481,7 @@ class GMSKDemodulator(Block):
 
         return output_bits
 
-    def process(self, complex_signal):
+    def process_demod(self, complex_signal):
 
         if not getattr(self, "is_working", True):
             return np.array(complex_signal, copy=True)
@@ -527,7 +527,7 @@ class GMSKDemodulator(Block):
 
             elif self.type_demod in ["vit_soft", "vit_hard"]:
 
-                sampled_signal = burst_samples[int(self.sps / 2) :: self.sps]
+                sampled_signal = burst_samples[self.sps - 1 :: self.sps]
                 trans_table, old_path_metrics, real_imag = self.calc_metric(increment, sampled_signal, start_state=0)
 
                 best_stop_state = self.find_best_stop_state(old_path_metrics)

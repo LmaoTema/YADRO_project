@@ -6,9 +6,6 @@ from receiver.equalizer.channel_estimator import ChannelEstimator
 class ZFEqualizer(Block):
 
     def __init__(self, modulation_params, is_working=True):
-
-        super().__init__(is_working)
-
         self.sps = modulation_params.get("sps", 4)
         self.estimator = ChannelEstimator(modulation_params)
 
@@ -23,11 +20,8 @@ class ZFEqualizer(Block):
 
         return s
 
-    def process(self, tx_signal, rx_signal):
-
-        if not self.is_working:
-            return rx_signal
-
+    def process_eq(self, rx_signal, tx_signal):
+        
         samples_per_burst = 156 * self.sps
         num_bursts = len(rx_signal) // samples_per_burst
 
