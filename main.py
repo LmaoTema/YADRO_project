@@ -42,7 +42,7 @@ def main():
     equalizer = ZFEqualizer(modulation_params, is_working=block_params["equalizer"]["is_working"])
     
     ber_ruler = BERRuler(**BER)
-    ber_ruler_uncoded = BERRuler(**BER) 
+    ber_ruler_uncoded = BERRuler(**BER, enable_log=False) 
     
     while not ber_ruler.isStop:
 

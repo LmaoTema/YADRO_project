@@ -20,9 +20,10 @@ class BERRuler:
         max_NumTrFrames=np.inf,
         max_BERRate=5,
         min_BERRate=2,
-        log_language="Russian",
+        log_language="Russian", enable_log=True
     ):
 
+        self.enable_log = enable_log
         # параметры
         self.h2dB = h2dB_init
         self.h2dBStep = h2dB_init_step
@@ -100,32 +101,30 @@ class BERRuler:
 
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        if self.log_language== "Russian":
-            print(
-                f"{ts} | Точка завершена: h2 = {self.h2dB:.2f} дБ | "
-                f"BER = {ber:.3e} | FER = {fer:.3e} | "
-                f"Frames = {self.NumTrFrames}"
-            )
-        else:
-            print(
-                f"{ts} | Point finished: h2 = {self.h2dB:.2f} dB | "
-                f"BER = {ber:.3e} | FER = {fer:.3e} | "
-                f"Frames = {self.NumTrFrames}"
-            )
-
-        if ber < self.MinBER:
-            self.isStop = True
+        # 🔹 ЛОГ — отдельно
+        if self.enable_log:
             if self.log_language == "Russian":
                 print(
-                    f"{ts} Достигнут предел по BER, вычисления остановлены"
+                    f"{ts} | Точка завершена: h2 = {self.h2dB:.2f} дБ | "
+                    f"BER = {ber:.3e} | FER = {fer:.3e} | "
+                    f"Frames = {self.NumTrFrames}"
                 )
             else:
                 print(
-                    f"{ts} BER limit reached, calculations stopped"
+                    f"{ts} | Point finished: h2 = {self.h2dB:.2f} dB | "
+                    f"BER = {ber:.3e} | FER = {fer:.3e} | "
+                    f"Frames = {self.NumTrFrames}"
                 )
-            
-        self._update_snr_step()
 
+        if ber < self.MinBER:
+            self.isStop = True
+            if self.enable_log:
+                if self.log_language == "Russian":
+                    print(f"{ts} Достигнут предел по BER, вычисления остановлены")
+                else:
+                    print(f"{ts} BER limit reached, calculations stopped")
+
+        self._update_snr_step()
         self.reset()
 
     def _update_snr_step(self):
