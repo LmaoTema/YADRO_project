@@ -61,9 +61,9 @@ modulation_params = {
 }
 
 channel_params = {
-    "code_rate": 1/2, 
+    "code_rate": 260/456, 
     "bits_per_symbol": 1, 
-    "burst_eff": 50/53, 
+    "burst_eff": 456/468, 
     "profile": "TU",        # TU / RA / HT
     "sample_rate": 1e6,
     "doppler": 100
