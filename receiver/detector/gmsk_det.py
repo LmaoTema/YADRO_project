@@ -65,14 +65,20 @@ class GMSKDetector:
         trans_table = np.zeros((samples_num, 16))
 
         sample_nr = 0
+        # Знак, учитывающий деротацию (+ - - +)
+        sign_rotate = 1
 
         while sample_nr < samples_num:
-            # Мнимая часть
-            input_symbol_imag = sampled_signal[sample_nr].imag
+            
+            if (sample_nr % 2) == 0:
+                input_symbol =  sign_rotate * sampled_signal[sample_nr].imag
+            else:
+                sign_rotate = - sign_rotate
+                input_symbol =  sign_rotate * sampled_signal[sample_nr].real
 
             for i in range(8):
-                pm_candidate1 = old_path_metrics[i] + input_symbol_imag - increment[i]
-                pm_candidate2 = old_path_metrics[i + 8] + input_symbol_imag - increment[i + 8]
+                pm_candidate1 = old_path_metrics[i] + input_symbol - increment[i]
+                pm_candidate2 = old_path_metrics[i + 8] + input_symbol - increment[i + 8]
                 paths_difference = pm_candidate2 - pm_candidate1
                 if paths_difference < 0:
                     new_path_metrics[2 * i] = pm_candidate1
@@ -80,8 +86,8 @@ class GMSKDetector:
                     new_path_metrics[2 * i] = pm_candidate2
                 trans_table[sample_nr][2 * i] = paths_difference
 
-                pm_candidate1 = old_path_metrics[i] - input_symbol_imag - increment[i]
-                pm_candidate2 = old_path_metrics[i + 8] - input_symbol_imag - increment[i + 8]
+                pm_candidate1 = old_path_metrics[i] - input_symbol + increment[i]
+                pm_candidate2 = old_path_metrics[i + 8] - input_symbol + increment[i + 8]
                 paths_difference = pm_candidate2 - pm_candidate1
                 if paths_difference < 0:
                     new_path_metrics[2 * i + 1] = pm_candidate1
@@ -89,8 +95,14 @@ class GMSKDetector:
                     new_path_metrics[2 * i + 1] = pm_candidate2
                 trans_table[sample_nr][2 * i + 1] = paths_difference
 
-            # Обновление метрик - переход к вещестенной части
+            tmp = new_path_metrics
+            new_path_metrics = old_path_metrics
+            old_path_metrics = tmp
+
             sample_nr += 1
+
+        return trans_table, old_path_metrics
+  
 
     def diff_phase(self, burst_samples):
         y_k = burst_samples[self.sps - 1 :: self.sps]
