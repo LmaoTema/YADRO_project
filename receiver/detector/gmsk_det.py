@@ -10,7 +10,7 @@ class GMSKDetector:
         self.h = params.get("h", 0.5)
         self.gaus_duration = params.get("gaus_duration", 4)
         self.rect_duration = params.get("rect_duration", 1)
-        self.type_demod = params.get("type_demod", "diff_phase")
+        self.type_demod = params.get("type_demod", "vit_hard") # diff_phase / vit_hard / vit_soft 
 
     def gmsk_filter(self):
         BT = self.BT
@@ -56,9 +56,6 @@ class GMSKDetector:
         increment[13] = - increment[2]
         increment[14] = - increment[1]
         increment[15] = - increment[0]
-
-       
-                
 
         return increment
 
@@ -120,6 +117,47 @@ class GMSKDetector:
                 best_stop_state = s
 
         return best_stop_state
+    
+    def traceback(self, trans_table, best_stop_state):
+        
+        state_transfer = [
+            [0, 8],
+            [0, 8],
+            [1, 9],
+            [1, 9],
+            [2, 10],
+            [2, 10],
+            [3, 11],
+            [3, 11],
+            [4, 12],
+            [4, 12],
+            [5, 13],
+            [5, 13],
+            [6, 14],
+            [6, 14],
+            [7, 15],
+            [7, 15]
+        ]
+
+        bits = np.zeros(148)
+        sample_nr = 148
+        curr_state = best_stop_state
+        while sample_nr > 0:
+            sample_nr -= 1
+            paths_difference = trans_table[sample_nr][curr_state]
+            
+            if (self.type_demod == "vit_hard"):
+                if paths_difference > 0:
+                    prev_state = state_transfer[curr_state][1]
+                else:
+                    prev_state = state_transfer[curr_state][0]
+
+                bits[sample_nr] = curr_state % 2
+
+            curr_state = prev_state
+
+        return bits
+
   
 
     def diff_phase(self, burst_samples):
