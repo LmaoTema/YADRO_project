@@ -2,6 +2,7 @@ import numpy as np
 from core.block import Block
 from .zero_force import ZFEqualizer
 from .mlse import MLSEEqualizer
+from .dfe import DFEEqualizer
 
 class Equalizer(Block):
 
