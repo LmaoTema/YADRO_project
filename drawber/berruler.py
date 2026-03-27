@@ -1,7 +1,6 @@
 import numpy as np
 from datetime import datetime
 
-
 class BERRuler:
 
     def __init__(
@@ -20,14 +19,13 @@ class BERRuler:
         max_NumTrFrames=np.inf,
         max_BERRate=5,
         min_BERRate=2,
-        log_language="Russian", enable_log=True
+        log_language="Russian",
+        enable_log=True,
+        channel_type="TCH/FS",
+        **kwargs
     ):
-
-        self.enable_log = enable_log
-        # параметры
         self.h2dB = h2dB_init
         self.h2dBStep = h2dB_init_step
-        self.h2dBInitStep = h2dB_init_step
         self.h2dBMinStep = h2dB_min_step
         self.h2dBMaxStep = h2dB_max_step
         self.h2dBMax = h2dB_max
@@ -38,146 +36,130 @@ class BERRuler:
         self.MinNumErBits = min_NumErBits
         self.MinNumErFrames = min_NumErFrames
         self.MinNumTrFrames = min_NumTrFrames
-
         self.MaxNumTrBits = max_NumTrBits
         self.MaxNumTrFrames = max_NumTrFrames
-
         self.MaxBERRate = max_BERRate
         self.MinBERRate = min_BERRate
 
+        self.enable_log = enable_log
         self.log_language = log_language
+        self.channel_type = channel_type
 
-        # статистика текущей точки
-        self.reset()
+  
+        tmp_blocks = self._slice_blocks(np.zeros(1))  
+        self.stats = {name: {"NumTrBits":0, "NumErBits":0, "NumTrFrames":0, "NumErFrames":0} for name in tmp_blocks}
+        self.results = {name: {"BER":[], "FER":[]} for name in tmp_blocks}
 
-        # массивы результатов
         self.h2dBs = []
-        self.BER_points = []
-        self.FER_points = []
 
-        # служебные
-        self.AdditionalSNR = []
-        self.isMainCalcFinished = False
         self.isStop = False
 
+
+    def _slice_blocks(self, bits):
+        if self.channel_type == "TCHFS":
+            return {
+                "class1": bits[0:182],
+                "class2": bits[182:260]
+            }
+        elif self.channel_type == "CS1":
+            return {"full": bits[:]}
+        elif self.channel_type == "MCS1":
+            return {
+                "header": bits[0:80],
+                "data": bits[80:456]
+            }
+        elif self.channel_type == "MCS5":
+            return {
+                "header": bits[0:136],
+                "data": bits[136:1384]
+            }
+        else:
+            return {"full": bits[:]}
+
+
     def update_frame(self, tx_bits, rx_bits):
+        tx_blocks = self._slice_blocks(tx_bits)
+        rx_blocks = self._slice_blocks(rx_bits)
 
-        tx_bits = np.asarray(tx_bits)
-        rx_bits = np.asarray(rx_bits)
+        for name, tx_blk in tx_blocks.items():
+            rx_blk = rx_blocks[name]
+            n_bits = len(tx_blk)
+            n_errors = np.sum(np.array(tx_blk) != np.array(rx_blk))
 
-        n_bits = len(tx_bits)
-        n_errors = np.sum(tx_bits != rx_bits)
+            self.stats[name]["NumTrBits"] += n_bits
+            self.stats[name]["NumTrFrames"] += 1
+            self.stats[name]["NumErBits"] += n_errors
+            if n_errors > 0:
+                self.stats[name]["NumErFrames"] += 1
 
-        self.NumTrBits += n_bits
-        self.NumTrFrames += 1
-        self.NumErBits += n_errors
-
-        if n_errors > 0:
-            self.NumErFrames += 1
 
     def is_point_finished(self):
+        total_tr_bits = sum(s["NumTrBits"] for s in self.stats.values())
+        total_er_bits = sum(s["NumErBits"] for s in self.stats.values())
+        total_tr_frames = sum(s["NumTrFrames"] for s in self.stats.values())
+        total_er_frames = sum(s["NumErFrames"] for s in self.stats.values())
 
         enough_statistics = (
-            self.NumErBits >= self.MinNumErBits
-            and self.NumErFrames >= self.MinNumErFrames
-            and self.NumTrFrames >= self.MinNumTrFrames
+            total_er_bits >= self.MinNumErBits and
+            total_er_frames >= self.MinNumErFrames and
+            total_tr_frames >= self.MinNumTrFrames
         )
-
         complexity_exceeded = (
-            self.NumTrBits >= self.MaxNumTrBits
-            or self.NumTrFrames >= self.MaxNumTrFrames
+            total_tr_bits >= self.MaxNumTrBits or
+            total_tr_frames >= self.MaxNumTrFrames
         )
-
         return enough_statistics or complexity_exceeded
 
     def finalize_point(self):
-
-        ber = self.NumErBits / max(1, self.NumTrBits)
-        fer = self.NumErFrames / max(1, self.NumTrFrames)
-
         self.h2dBs.append(self.h2dB)
-        self.BER_points.append(ber)
-        self.FER_points.append(fer)
-
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # 🔹 ЛОГ — отдельно
-        if self.enable_log:
-            if self.log_language == "Russian":
-                print(
-                    f"{ts} | Точка завершена: h2 = {self.h2dB:.2f} дБ | "
-                    f"BER = {ber:.3e} | FER = {fer:.3e} | "
-                    f"Frames = {self.NumTrFrames}"
-                )
-            else:
-                print(
-                    f"{ts} | Point finished: h2 = {self.h2dB:.2f} dB | "
-                    f"BER = {ber:.3e} | FER = {fer:.3e} | "
-                    f"Frames = {self.NumTrFrames}"
-                )
+        for name, stat in self.stats.items():
+            ber = stat["NumErBits"] / max(1, stat["NumTrBits"])
+            fer = stat["NumErFrames"] / max(1, stat["NumTrFrames"])
+            self.results[name]["BER"].append(ber)
+            self.results[name]["FER"].append(fer)
 
-        if ber < self.MinBER:
-            self.isStop = True
             if self.enable_log:
-                if self.log_language == "Russian":
-                    print(f"{ts} Достигнут предел по BER, вычисления остановлены")
-                else:
-                    print(f"{ts} BER limit reached, calculations stopped")
+                print(f"{ts} | h2={self.h2dB:.2f} dB | {name} BER={ber:.3e} | FER={fer:.3e} | Frames={stat['NumTrFrames']}")
+
+        main_ber = list(self.results.values())[0]["BER"][-1]
+        if main_ber < self.MinBER:
+            self.isStop = True
 
         self._update_snr_step()
         self.reset()
 
     def _update_snr_step(self):
-
-        if len(self.BER_points) < 2:
+        if len(self.h2dBs) < 2:
             self.h2dB += self.h2dBStep
             return
 
-        ber_prev = self.BER_points[-2]
-        ber_curr = self.BER_points[-1]
+        ber_prev = list(self.results.values())[0]["BER"][-2]
+        ber_curr = list(self.results.values())[0]["BER"][-1]
 
-        if ber_curr == 0:
-            rate = np.inf
-        else:
-            rate = ber_prev / ber_curr
+        rate = np.inf if ber_curr == 0 else ber_prev / ber_curr
 
-        # уменьшение шага
         if rate > self.MaxBERRate:
-
-            RRate = rate / self.MaxBERRate
-
-            if RRate < 4:
-                dec = 0.5
-            elif RRate < 16:
-                dec = 0.25
-            elif RRate < 64:
-                dec = 0.125
-            else:
-                dec = 0.0625
-
+            dec = 0.5 if rate/self.MaxBERRate < 4 else 0.25 if rate/self.MaxBERRate < 16 else 0.125 if rate/self.MaxBERRate < 64 else 0.0625
             self.h2dBStep = max(self.h2dBStep * dec, self.h2dBMinStep)
-
-        # увеличение шага
         elif rate < self.MinBERRate:
-
             self.h2dBStep = min(self.h2dBStep * 2, self.h2dBMaxStep)
 
         self.h2dB += self.h2dBStep
-
         if self.h2dB > self.h2dBMax:
             self.isStop = True
 
     def reset(self):
+        for stat in self.stats.values():
+            stat["NumTrBits"] = 0
+            stat["NumErBits"] = 0
+            stat["NumTrFrames"] = 0
+            stat["NumErFrames"] = 0
 
-        self.NumTrBits = 0
-        self.NumErBits = 0
-        self.NumTrFrames = 0
-        self.NumErFrames = 0
-        
+    # 🔹 Получение результатов в виде словаря для графиков
     def get_results(self):
-
-        return (
-            np.array(self.h2dBs),
-            np.array(self.BER_points),
-            np.array(self.FER_points),
-        )
+        return {
+            "h2dB": np.array(self.h2dBs),
+            "results": self.results
+        }

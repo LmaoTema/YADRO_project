@@ -41,8 +41,8 @@ def main():
 
     equalizer = Equalizer(equalizer_params, modulation_params, is_working=block_params["equalizer"]["is_working"])
     
-    ber_ruler = BERRuler(**BER)
-    ber_ruler_uncoded = BERRuler(**BER, enable_log=False) 
+    ber_ruler = BERRuler(**BER, channel_type=channel_type)
+    ber_ruler_uncoded = BERRuler(**BER,channel_type=channel_type, enable_log=False) 
     
     while not ber_ruler.isStop:
 
@@ -84,12 +84,14 @@ def main():
 
         ber_ruler.finalize_point()
         ber_ruler_uncoded.finalize_point()
+        
+    res_coded = ber_ruler.get_results()
+    res_uncoded = ber_ruler_uncoded.get_results()
 
-    snr, ber, fer = ber_ruler.get_results()
-    snr, ber_u, fer_u = ber_ruler_uncoded.get_results()
-
-    plot_ber(snr, ber, ber_u)
-    return snr, ber, fer, ber_u, fer_u 
+    h2dBs = res_coded["h2dB"]
+    plot_ber(h2dBs, res_coded["results"], uncoded_results=res_uncoded["results"], channel_type=channel_type)
+    
+    return h2dBs, res_coded["results"], res_uncoded["results"]
 
 if __name__ == "__main__":
     main()
