@@ -61,7 +61,8 @@ modulation_params = {
 }
 
 equalizer_params = {
-    "equalizer_type": "ZF" # ZF / MMSE / DFE / MLSE
+    "equalizer_type": "ZF", # ZF / MMSE / DFE / MLSE
+    "channel_model":simulation_params.get("channel_model", "awgn"),
 }
 
 channel_params = {

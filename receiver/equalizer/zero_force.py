@@ -4,8 +4,9 @@ from .channel_estimator import ChannelEstimator
 
 class ZFEqualizer:
 
-    def __init__(self, modulation_params):
+    def __init__(self, modulation_params, channel_model):
         self.sps = modulation_params.get("sps", 4)
+        self.channel_model = channel_model
         self.estimator = ChannelEstimator(modulation_params)
 
     def equalize(self, rx, h):
@@ -24,6 +25,9 @@ class ZFEqualizer:
         samples_per_burst = 156 * self.sps
         num_bursts = len(rx_signal) // samples_per_burst
 
+        if self.channel_model == "awgn":
+            h_est = self.estimator.h_awgn()
+
         eq_signal = []
         for b in range(num_bursts):
             start_idx = b * samples_per_burst
@@ -32,7 +36,8 @@ class ZFEqualizer:
             tx_burst = tx_signal[start_idx : end_idx]
             rx_burst = rx_signal[start_idx  : end_idx]
 
-            h_est = self.estimator.estimate(tx_burst, rx_burst)
+            if self.channel_model != "awgn":
+                h_est = self.estimator.h_rayleigh(tx_burst, rx_burst)
 
             eq_burst= self.equalize(rx_burst, h_est)
             eq_signal.append(eq_burst)
