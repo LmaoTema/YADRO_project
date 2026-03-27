@@ -4,9 +4,10 @@ from .vit_detector_osmo import calc_increment_osmo, calc_metric_osmo, find_best_
 class GMSKDetector:
     def __init__(self, params):
         self.BT = params.get("BT", 0.3)
-        self.T = params.get("T", 1)
-        self.sps = params.get("sps", 100)
+        self.T = params.get("T", 3.69e-6)
+        self.sps = params.get("sps", 4)
         self.dt = self.T / self.sps
+        self.h = params.get("h", 0.5)
         self.gaus_duration = params.get("gaus_duration", 4)
         self.rect_duration = params.get("rect_duration", 1)
         self.type_demod = params.get("type_demod", "diff_phase")
@@ -14,35 +15,39 @@ class GMSKDetector:
     def gmsk_filter(self):
         BT = self.BT
         T = self.T
-        dt = self.dt
         gaus_duration = self.gaus_duration
         rect_duration = self.rect_duration
 
+        oversampling = 100
+        sps_oversampling = self.sps * oversampling
+        dt_oversampling = T/sps_oversampling
+
         delta = np.sqrt(np.log(2)) / (2 * np.pi * BT)
 
-        t_h = np.arange(-gaus_duration / 2 * T, gaus_duration / 2 * T, dt)
-        t_rect = np.arange(-rect_duration / 2 * T, rect_duration / 2 * T, dt)
+        t_h = np.arange(-gaus_duration / 2 * T, gaus_duration / 2 * T, dt_oversampling)
+        t_rect = np.arange(-rect_duration / 2 * T, rect_duration / 2 * T, dt_oversampling)
 
         h_t = np.exp(-(t_h**2) / (2 * (delta**2) * (T**2))) / (
             np.sqrt(2 * np.pi) * delta * T
         )
         rect = np.ones(t_rect.size) / T
 
-        g_t = np.convolve(h_t, rect) * dt
+        g_t = np.convolve(h_t, rect) * dt_oversampling
 
         return g_t
 
     def calc_increment(self, rhh):
         # Определяем влияние предыдущих бит для каждого состояния
+        # C учетом деротации (+ - - +)
         increment = np.zeros(16)
-        increment[0] = rhh[4].real + rhh[3].imag + rhh[2].real + rhh[1].imag
-        increment[1] = rhh[4].real + rhh[3].imag + rhh[2].real - rhh[1].imag
-        increment[2] = rhh[4].real + rhh[3].imag - rhh[2].real + rhh[1].imag
-        increment[3] = rhh[4].real + rhh[3].imag - rhh[2].real - rhh[1].imag
-        increment[4] = rhh[4].real - rhh[3].imag + rhh[2].real + rhh[1].imag
-        increment[5] = rhh[4].real - rhh[3].imag + rhh[2].real - rhh[1].imag
-        increment[6] = rhh[4].real - rhh[3].imag - rhh[2].real + rhh[1].imag
-        increment[7] = rhh[4].real - rhh[3].imag - rhh[2].real - rhh[1].imag
+        increment[0] = rhh[4].real - rhh[3].imag - rhh[2].real + rhh[1].imag
+        increment[1] = rhh[4].real - rhh[3].imag - rhh[2].real - rhh[1].imag
+        increment[2] = rhh[4].real - rhh[3].imag + rhh[2].real + rhh[1].imag
+        increment[3] = rhh[4].real - rhh[3].imag + rhh[2].real - rhh[1].imag
+        increment[4] = rhh[4].real + rhh[3].imag - rhh[2].real + rhh[1].imag
+        increment[5] = rhh[4].real + rhh[3].imag - rhh[2].real - rhh[1].imag
+        increment[6] = rhh[4].real + rhh[3].imag + rhh[2].real + rhh[1].imag
+        increment[7] = rhh[4].real + rhh[3].imag + rhh[2].real - rhh[1].imag
         increment[8] = - increment[7]
         increment[9] = - increment[6]
         increment[10] = - increment[5]
@@ -51,6 +56,9 @@ class GMSKDetector:
         increment[13] = - increment[2]
         increment[14] = - increment[1]
         increment[15] = - increment[0]
+
+       
+                
 
         return increment
 
@@ -65,7 +73,7 @@ class GMSKDetector:
         trans_table = np.zeros((samples_num, 16))
 
         sample_nr = 0
-        # Знак, учитывающий деротацию (+ - - +)
+        # Учет деротации (+ - - +)
         sign_rotate = 1
 
         while sample_nr < samples_num:
@@ -102,6 +110,16 @@ class GMSKDetector:
             sample_nr += 1
 
         return trans_table, old_path_metrics
+    
+    def find_best_stop_state(old_path_metrics, stop_states=[0, 8]):
+        best_stop_state = stop_states[0]
+        max_stop_state_metric = old_path_metrics[best_stop_state]
+        for s in stop_states:
+            if old_path_metrics[s] > max_stop_state_metric:
+                max_stop_state_metric = old_path_metrics[s]
+                best_stop_state = s
+
+        return best_stop_state
   
 
     def diff_phase(self, burst_samples):
@@ -135,9 +153,7 @@ class GMSKDetector:
         all_bits = []
 
         if self.type_demod in ["vit_soft", "vit_hard"]:
-            g_t = self.gmsk_filter()
-            rhh = self.calc_rhh(g_t)
-            increment = calc_increment_osmo(rhh)
+            increment = calc_increment_osmo()
 
         for b in range(num_bursts):
             start_idx = b * samples_per_burst

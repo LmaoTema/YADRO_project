@@ -52,7 +52,6 @@ class GMSKModulation:
     def generate_q_gmsk(self):
         BT = self.BT
         T = self.T
-        dt = self.dt
         gaus_duration = self.gaus_duration
         rect_duration = self.rect_duration
 
