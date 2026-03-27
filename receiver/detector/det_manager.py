@@ -19,6 +19,6 @@ class Detector(Block):
 
             raise ValueError("Unknown scheme")
 
-    def _process(self, signal):
+    def _process(self, signal, rhh=0):
 
-        return self.detector.process_detect(signal)
+        return self.detector.process_detect(signal, rhh)

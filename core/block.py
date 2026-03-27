@@ -3,12 +3,12 @@ class Block:
     def __init__(self, is_working=True):
         self.is_working = is_working
 
-    def process(self, bits, tx_bits=False):
+    def process(self, bits, params=None):
         if not self.is_working:
                 return bits
         
-        if tx_bits is not False:
-            return self._process(bits, tx_bits)
+        if params is not None:
+            return self._process(bits, params)
         else:
             return self._process(bits)
 

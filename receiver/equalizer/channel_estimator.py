@@ -48,8 +48,10 @@ class ChannelEstimator:
             for j in range(L):
                 c_0[i] *= s[i + j * sps_oversampling]
 
+        c_0_trunc = c_0[int(sps_oversampling / 2) : - int(sps_oversampling / 2)]
+
         # Для АБГШ c_0 - импульсная характеристика
-        h = c_0[::oversampling]
+        h = c_0_trunc[::oversampling]
 
         return h
 

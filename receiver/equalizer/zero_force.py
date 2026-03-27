@@ -25,6 +25,7 @@ class ZFEqualizer:
         samples_per_burst = 156 * self.sps
         num_bursts = len(rx_signal) // samples_per_burst
 
+        rhh = []
         if self.channel_model == "awgn":
             h_est = self.estimator.h_awgn()
 
@@ -42,4 +43,4 @@ class ZFEqualizer:
             eq_burst= self.equalize(rx_burst, h_est)
             eq_signal.append(eq_burst)
 
-        return np.concatenate(eq_signal)
+        return np.concatenate(eq_signal), rhh
