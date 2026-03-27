@@ -12,30 +12,6 @@ class GMSKDetector:
         self.rect_duration = params.get("rect_duration", 1)
         self.type_demod = params.get("type_demod", "vit_hard") # diff_phase / vit_hard / vit_soft 
 
-    def gmsk_filter(self):
-        BT = self.BT
-        T = self.T
-        gaus_duration = self.gaus_duration
-        rect_duration = self.rect_duration
-
-        oversampling = 100
-        sps_oversampling = self.sps * oversampling
-        dt_oversampling = T/sps_oversampling
-
-        delta = np.sqrt(np.log(2)) / (2 * np.pi * BT)
-
-        t_h = np.arange(-gaus_duration / 2 * T, gaus_duration / 2 * T, dt_oversampling)
-        t_rect = np.arange(-rect_duration / 2 * T, rect_duration / 2 * T, dt_oversampling)
-
-        h_t = np.exp(-(t_h**2) / (2 * (delta**2) * (T**2))) / (
-            np.sqrt(2 * np.pi) * delta * T
-        )
-        rect = np.ones(t_rect.size) / T
-
-        g_t = np.convolve(h_t, rect) * dt_oversampling
-
-        return g_t
-
     def calc_increment(self, rhh):
         # Определяем влияние предыдущих бит для каждого состояния
         # C учетом деротации (+ - - +)

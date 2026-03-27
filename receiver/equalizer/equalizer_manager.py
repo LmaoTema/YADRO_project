@@ -2,6 +2,7 @@ import numpy as np
 from core.block import Block
 from .zero_force import ZFEqualizer
 from .mlse import MLSEEqualizer
+from .dfe import DFEEqualizer
 
 class Equalizer(Block):
 
@@ -9,15 +10,14 @@ class Equalizer(Block):
         super().__init__(is_working)
 
         eq_type = equalizer_params.get("equalizer_type", "ZF")
+        channel_model = equalizer_params.get("channel_model", "awgn")
 
         if eq_type == "ZF":
-            self.equalizer = ZFEqualizer(modulation_params)
-        elif eq_type == "MMSE":
-            self.equalizer = MMSEEqualizer(modulation_params)
+            self.equalizer = ZFEqualizer(modulation_params, channel_model)
         elif eq_type == "DFE":
-            self.equalizer = DFEEqualizer(modulation_params)
+            self.equalizer = DFEEqualizer(modulation_params, channel_model)
         elif eq_type == "MLSE":
-            self.equalizer = MLSEEqualizer(modulation_params)
+            self.equalizer = MLSEEqualizer(modulation_params, channel_model)
     
     def _process(self, rx_signal, tx_signal):
 
