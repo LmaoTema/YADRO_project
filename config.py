@@ -1,3 +1,4 @@
+from transmitter.channel_coder.utils import MSC_PARAMS
 
 simulation_params = {
     "channel_type": "TCHFS",
