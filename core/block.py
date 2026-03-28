@@ -5,6 +5,10 @@ class Block:
 
     def process(self, bits, params=None):
         if not self.is_working:
+            if params is not None:
+                # Для отключения эквалайзера
+                return bits, []
+            else:
                 return bits
         
         if params is not None:

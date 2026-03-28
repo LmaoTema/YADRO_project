@@ -57,11 +57,11 @@ modulation_params = {
     "h": 0.5,
     "gaus_duration": 4,
     "rect_duration": 1,
-    "type_demod": "diff_phase" # diff_phase / vit_hard / vit_soft 
+    "type_demod": "vit_hard" # diff_phase / vit_hard / vit_soft 
 }
 
 equalizer_params = {
-    "equalizer_type": "ZF", # ZF / MMSE / DFE / MLSE
+    "equalizer_type": "MLSE", # ZF /  DFE / MLSE
     "channel_model":simulation_params.get("channel_model", "awgn"),
 }
 

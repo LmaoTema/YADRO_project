@@ -10,7 +10,11 @@ class Equalizer(Block):
         super().__init__(is_working)
 
         eq_type = equalizer_params.get("equalizer_type", "ZF")
+        type_demod = modulation_params.get("type_demod", "diff_phase")
         channel_model = equalizer_params.get("channel_model", "awgn")
+
+        if (type_demod in ["vit_hard", "vit_soft"]) & (eq_type != "MLSE"):
+            raise ValueError("Типы эквалайзера и детектора не соотвествуют")
 
         if eq_type == "ZF":
             self.equalizer = ZFEqualizer(modulation_params, channel_model)

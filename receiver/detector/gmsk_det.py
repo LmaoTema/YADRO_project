@@ -10,7 +10,7 @@ class GMSKDetector:
         self.h = params.get("h", 0.5)
         self.gaus_duration = params.get("gaus_duration", 4)
         self.rect_duration = params.get("rect_duration", 1)
-        self.type_demod = params.get("type_demod", "vit_hard") # diff_phase / vit_hard / vit_soft 
+        self.type_demod = params.get("type_demod", "diff_phase") # diff_phase / vit_hard / vit_soft 
 
     def calc_increment(self, rhh):
         # Определяем влияние предыдущих бит для каждого состояния
@@ -173,7 +173,6 @@ class GMSKDetector:
 
     def process_detect(self, complex_signal, rhh):
         
-        # После согласованного фильтра другая длина
         sps = self.sps
         samples_per_burst = 156 * sps
         num_bursts = len(complex_signal) // samples_per_burst
@@ -182,7 +181,12 @@ class GMSKDetector:
 
         for b in range(num_bursts):
             if self.type_demod in ["vit_soft", "vit_hard"]:
-                increment = self.calc_increment(rhh[b])
+                # Временный вариант для выключения эквалайзера
+                # Передалть после добавление отдельного блока СФ
+                if len(rhh) == 0:
+                    increment = 0
+                else:
+                    increment = self.calc_increment(rhh[b])
         
             start_idx = b * samples_per_burst
             burst_samples = complex_signal[start_idx : start_idx + 148 * sps]
