@@ -26,7 +26,9 @@ def main():
     
     channel_type = simulation_params["channel_type"]
     channel_model = simulation_params["channel_model"]
-    profile = channel_params["profile"]
+    sweep_mode = simulation_params.get("sweep_mode", "snr")
+    profile = channel_params.get("profile", "TU")
+    
     mode_cfg = mode_params[channel_type]
     frame_bits = mode_params[channel_type]["frame_bits"]
     
@@ -41,14 +43,19 @@ def main():
 
     equalizer = Equalizer(equalizer_params, modulation_params, is_working=block_params["equalizer"]["is_working"])
     
-    ber_ruler = BERRuler(**BER, channel_type=channel_type)
+    ber_ruler = BERRuler(**BER, channel_type = channel_type, sweep_mode = sweep_mode)
     ber_ruler_uncoded = BERRuler(**BER,channel_type=channel_type, enable_log=False) 
     
     while not ber_ruler.isStop:
 
-        snr_db = ber_ruler.h2dB 
-        channel = ChannelBlock(channel_model = channel_model, snr_db = snr_db, is_working = block_params["channel"]["is_working"])
+        if sweep_mode == "prx":
+            x_value = ber_ruler.prx_dbm 
+            channel = ChannelBlock(channel_model = channel_model, signal_power = x_value, profile = profile, is_working = block_params["channel"]["is_working"])
 
+        else:
+            x_value = ber_ruler.h2dB
+            channel = ChannelBlock(channel_model = channel_model, snr_db = x_value, profile = profile, is_working = block_params["channel"]["is_working"])
+        
         while not ber_ruler.is_point_finished():
 
             bits = np.random.randint(0, 2, frame_bits)
@@ -70,6 +77,10 @@ def main():
             decoded_bits = decoder.process(bits_deintr)
 
             if DEBUG_TRACE and frame_counter == TRACE_FRAME:
+                if sweep_mode == "prx":
+                    print(f"P_rx = {x_value:.2f} dBm")
+                else:
+                    print(f"h2 = {x_value:.2f} dB")
                 print("После источника:", bits)
                 # print("После кодера:", tx_stream)
                 # print("После модулятора", tx_signal)
@@ -79,7 +90,7 @@ def main():
 
             ber_ruler.update_frame(bits, decoded_bits)
             
-            ber_ruler_uncoded.update_frame(bits_cd, bits_deintr)
+            ber_ruler_uncoded.update_frame(np.asarray(bits_cd), np.asarray(bits_deintr))
             frame_counter += 1
 
         ber_ruler.finalize_point()
@@ -88,10 +99,10 @@ def main():
     res_coded = ber_ruler.get_results()
     res_uncoded = ber_ruler_uncoded.get_results()
 
-    h2dBs = res_coded["h2dB"]
-    plot_ber(h2dBs, res_coded["results"], uncoded_results=res_uncoded["results"], channel_type=channel_type)
+    x_value = res_coded["x"]
+    plot_ber(x_value, res_coded["results"], uncoded_results = res_uncoded["results"], channel_type = channel_type, sweep_mode = sweep_mode)
     
-    return h2dBs, res_coded["results"], res_uncoded["results"]
+    return x_value, res_coded["results"], res_uncoded["results"]
 
 if __name__ == "__main__":
     main()
