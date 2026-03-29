@@ -89,7 +89,8 @@ class BERRuler:
         if self.channel_type == "TCHFS":
             return {
                 "class1": bits[0:182],
-                "class2": bits[182:260]
+                "class2": bits[182:260],
+                "full": bits[0:260]
             }
         elif self.channel_type == "CS1":
             return {"full": bits[:]}
