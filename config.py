@@ -8,11 +8,12 @@ simulation_params = {
 
 block_params = {
 
-    "encoding":     {"is_working": True},
-    "interleaver":  {"is_working": True},
-    "modulation":   {"is_working": True},
-    "channel":      {"is_working": True},
-    "equalizer":    {"is_working": False},
+    "encoding":       {"is_working": True},
+    "interleaver":    {"is_working": True},
+    "modulation":     {"is_working": True},
+    "channel":        {"is_working": True},
+    "matched filter": {"is_working": False},
+    "equalizer":      {"is_working": False},
 }
 
 BER = {

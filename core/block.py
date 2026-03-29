@@ -3,18 +3,14 @@ class Block:
     def __init__(self, is_working=True):
         self.is_working = is_working
 
-    def process(self, bits, params=None):
+    def process(self, *args):
         if not self.is_working:
-            if params is not None:
-                # Для отключения эквалайзера
-                return bits, []
+            if len(args) == 1:
+                return args[0]
             else:
-                return bits
-        
-        if params is not None:
-            return self._process(bits, params)
-        else:
-            return self._process(bits)
+                return args
 
-    def _process(self, bits):
+        return self._process(*args)
+    
+    def _process(self, *args):
         raise NotImplementedError("Block must implement _process")
