@@ -5,10 +5,8 @@ class Block:
 
     def process(self, *args):
         if not self.is_working:
-            if len(args) == 1:
-                return args[0]
-            else:
-                return args
+            return args[0]
+
 
         return self._process(*args)
     

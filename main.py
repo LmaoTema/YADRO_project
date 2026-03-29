@@ -8,12 +8,15 @@ from transmitter.interleaver.inter_manager import Interleaver
 from receiver.decoder.dec_manager import ChannelDecoder
 from receiver.deinterleaver.deinter_manager import Deinterleaver
 
-from channel.channel_manager import ChannelBlock
-
-from receiver.equalizer.equalizer_manager import Equalizer
-
 from transmitter.modulator import Modulation
 from receiver.detector.det_manager import Detector
+
+from channel.channel_manager import ChannelBlock
+
+from receiver.estimator import ChannelEstimate
+from receiver.matched_filter import MatchedFilter
+
+from receiver.equalizer.equalizer_manager import Equalizer
 
 from drawber.berruler import BERRuler
 from drawber.plot import plot_ber
@@ -39,7 +42,10 @@ def main():
     decoder = ChannelDecoder(scheme=mode_cfg["scheme"], is_working=block_params["encoding"]["is_working"])
     
     modulator = Modulation(channel_type, modulation_params, is_working=block_params["modulation"]["is_working"])
-    detector = Detector(channel_type, modulation_params, is_working=block_params["modulation"]["is_working"])
+    detector = Detector(channel_type, modulation_params, block_params, is_working=block_params["modulation"]["is_working"])
+
+    estimator = ChannelEstimate(modulation_params, simulation_params)
+    match_filter = MatchedFilter(modulation_params, is_working=block_params["matched filter"]["is_working"])
 
     equalizer = Equalizer(equalizer_params, modulation_params, is_working=block_params["equalizer"]["is_working"])
     
@@ -68,9 +74,13 @@ def main():
 
             rx_signal = channel.process(tx_signal)
 
-            eq_signal, rhh = equalizer.process(rx_signal, tx_signal)
+            h = estimator.process(rx_signal, tx_signal)
 
-            rx_bits = detector.process(eq_signal, rhh)
+            match_signal = match_filter.process(rx_signal, h)
+
+            eq_signal = equalizer.process(match_signal, h)
+
+            rx_bits = detector.process(eq_signal, h)
             
             bits_deintr = deinterv.process(rx_bits)
 

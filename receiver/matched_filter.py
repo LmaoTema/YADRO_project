@@ -4,9 +4,10 @@ from core.block import Block
 
 class MatchedFilter(Block):
 
-    def __init__(self, modulation_params, simulation_params, is_working=False):
+    def __init__(self, modulation_params, is_working=False):
         super().__init__(is_working)
 
+        self.sps = modulation_params.get("sps", 4)
 
     def _process(self, rx_signal, h):
         

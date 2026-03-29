@@ -2,7 +2,7 @@ import numpy as np
 from .vit_detector_osmo import calc_increment_osmo, calc_metric_osmo, find_best_stop_state_osmo, traceback_osmo
 
 class GMSKDetector:
-    def __init__(self, params):
+    def __init__(self, params, block_params):
         self.BT = params.get("BT", 0.3)
         self.T = params.get("T", 3.69e-6)
         self.sps = params.get("sps", 4)
@@ -11,6 +11,8 @@ class GMSKDetector:
         self.gaus_duration = params.get("gaus_duration", 4)
         self.rect_duration = params.get("rect_duration", 1)
         self.type_demod = params.get("type_demod", "diff_phase") # diff_phase / vit_hard / vit_soft 
+
+        self.mf_is_working = block_params["matched filter"]["is_working"]
 
     def calc_rhh(self, h):
         n = np.arange(h.size)
@@ -193,11 +195,12 @@ class GMSKDetector:
 
         for b in range(num_bursts):
             if self.type_demod in ["vit_soft", "vit_hard"]:
-                if h == 0:
+                if self.mf_is_working == False:
                     increment = np.zeros(16)
                 else:
                     rhh = self.calc_rhh(h[b])
                     increment = self.calc_increment(rhh)
+                    # increment = np.zeros(16)
         
             start_idx = b * samples_per_burst
             burst_samples = complex_signal[start_idx : start_idx + 148 * sps]
