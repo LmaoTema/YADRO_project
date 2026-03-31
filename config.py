@@ -3,17 +3,18 @@ from transmitter.channel_coder.utils import MSC_PARAMS
 
 simulation_params = {
     "channel_type": "TCHFS",
-    "channel_model": "rayleigh_multipath",    # "awgn" / "rayleigh_single" / "rayleigh_multipath"
+    "channel_model": "rayleigh_single",    # "awgn" / "rayleigh_single" / "rayleigh_multipath"
     "sweep_mode": "snr"         # "prx"/"snr"
 }
 
 block_params = {
 
-    "encoding":     {"is_working": True},
-    "interleaver":  {"is_working": True},
-    "modulation":   {"is_working": True},
-    "channel":      {"is_working": True},
-    "equalizer":    {"is_working": False},
+    "encoding":       {"is_working": True},
+    "interleaver":    {"is_working": True},
+    "modulation":     {"is_working": True},
+    "channel":        {"is_working": True},
+    "matched filter": {"is_working": False},
+    "equalizer":      {"is_working": False},
 }
 
 BER = {

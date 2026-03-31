@@ -2,7 +2,7 @@ import numpy as np
 from .vit_detector_osmo import calc_increment_osmo, calc_metric_osmo, find_best_stop_state_osmo, traceback_osmo
 
 class GMSKDetector:
-    def __init__(self, params):
+    def __init__(self, params, block_params):
         self.BT = params.get("BT", 0.3)
         self.T = params.get("T", 3.69e-6)
         self.sps = params.get("sps", 4)
@@ -11,6 +11,19 @@ class GMSKDetector:
         self.gaus_duration = params.get("gaus_duration", 4)
         self.rect_duration = params.get("rect_duration", 1)
         self.type_demod = params.get("type_demod", "diff_phase") # diff_phase / vit_hard / vit_soft 
+
+        self.mf_is_working = block_params["matched filter"]["is_working"]
+
+    def calc_rhh(self, h):
+        n = np.arange(h.size)
+        # Разобраться с инкрементами. Надо ли вращать самостоятельно
+        # h_complex = h * (1j**(n / self.sps))
+        h_complex = h
+        rhh_full = np.convolve(h_complex, np.conj(h_complex[::-1]))
+        center_idx = h_complex.size - 1
+        rhh = rhh_full[center_idx :: self.sps]
+
+        return rhh
 
     def calc_increment(self, rhh):
         # Определяем влияние предыдущих бит для каждого состояния
@@ -73,9 +86,10 @@ class GMSKDetector:
                 sign_rotate = - sign_rotate
                 input_symbol =  sign_rotate * sampled_signal[sample_nr].real
 
+            # в итоге инвертированный знак. может и инкременты поменять
             for i in range(8):
-                pm_candidate1 = old_path_metrics[i] + input_symbol #- increment[i]
-                pm_candidate2 = old_path_metrics[i + 8] + input_symbol #- increment[i + 8]
+                pm_candidate1 = old_path_metrics[i] + input_symbol - increment[i]
+                pm_candidate2 = old_path_metrics[i + 8] + input_symbol - increment[i + 8]
                 paths_difference = pm_candidate2 - pm_candidate1
                 if paths_difference < 0:
                     new_path_metrics[2 * i] = pm_candidate1
@@ -83,8 +97,8 @@ class GMSKDetector:
                     new_path_metrics[2 * i] = pm_candidate2
                 trans_table[sample_nr][2 * i] = paths_difference
 
-                pm_candidate1 = old_path_metrics[i] - input_symbol #+ increment[i]
-                pm_candidate2 = old_path_metrics[i + 8] - input_symbol #+ increment[i + 8]
+                pm_candidate1 = old_path_metrics[i] - input_symbol + increment[i]
+                pm_candidate2 = old_path_metrics[i + 8] - input_symbol + increment[i + 8]
                 paths_difference = pm_candidate2 - pm_candidate1
                 if paths_difference < 0:
                     new_path_metrics[2 * i + 1] = pm_candidate1
@@ -171,7 +185,7 @@ class GMSKDetector:
 
         return burst_bits
 
-    def process_detect(self, complex_signal, rhh):
+    def process_detect(self, complex_signal, h):
         
         sps = self.sps
         samples_per_burst = 156 * sps
@@ -181,12 +195,12 @@ class GMSKDetector:
 
         for b in range(num_bursts):
             if self.type_demod in ["vit_soft", "vit_hard"]:
-                # Временный вариант для выключения эквалайзера
-                # Передалть после добавление отдельного блока СФ
-                if len(rhh) == 0:
-                    increment = 0
+                if self.mf_is_working == False:
+                    increment = np.zeros(16)
                 else:
-                    increment = self.calc_increment(rhh[b])
+                    rhh = self.calc_rhh(h[b])
+                    increment = self.calc_increment(rhh)
+                    # increment = np.zeros(16)
         
             start_idx = b * samples_per_burst
             burst_samples = complex_signal[start_idx : start_idx + 148 * sps]

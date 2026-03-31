@@ -1,5 +1,4 @@
 import numpy as np
-from .channel_estimator import ChannelEstimator   
 
 class DFEEqualizer:
     def __init__(self, modulation_params, channel_model="rayleigh"):
