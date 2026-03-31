@@ -67,7 +67,7 @@ def main():
             tx_signal = modulator.process(np.array(tx_stream))
 
             rx_signal = channel.process(tx_signal)
-
+            
             eq_signal, rhh = equalizer.process(rx_signal, tx_signal)
 
             rx_bits = detector.process(eq_signal, rhh)
