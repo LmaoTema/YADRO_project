@@ -64,7 +64,7 @@ class GMSKDetector:
 
         return increment
 
-    def calc_metric(self, increment, sampled_signal, start_state=0):
+    def calc_metric(self, increment, sampled_signal, start_state):
         # Расчет метрик для всех возможных состояний
         old_path_metrics = np.ones(16) * -1e30
         old_path_metrics[start_state] = 0.0
@@ -203,16 +203,16 @@ class GMSKDetector:
                     # increment = np.zeros(16)
         
             start_idx = b * samples_per_burst
-            burst_samples = complex_signal[start_idx : start_idx + 148 * sps]
+            burst = complex_signal[start_idx : start_idx + 148 * sps]
 
             if self.type_demod == "diff_phase":
-                burst_bits = self.diff_phase(burst_samples)
+                burst_bits = self.diff_phase(burst)
                 all_bits.append(burst_bits)
 
             elif self.type_demod in ["vit_soft", "vit_hard"]:
-                sampled_signal = burst_samples[self.sps - 1 :: self.sps]
+                sampled_burst = burst[self.sps - 1:: self.sps]
 
-                trans_table, old_path_metrics = self.calc_metric(increment, sampled_signal, start_state=0)
+                trans_table, old_path_metrics = self.calc_metric(increment, sampled_burst, start_state=0)
 
                 best_stop_state = self.find_best_stop_state(old_path_metrics)
 

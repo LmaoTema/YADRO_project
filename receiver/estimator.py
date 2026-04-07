@@ -34,7 +34,7 @@ class ChannelEstimate():
             np.sqrt(2 * np.pi) * delta * T
         )
         rect = np.ones(t_rect.size) / T
-
+        
         g_t = np.convolve(h_t, rect) * dt_oversampling
 
         q_gmsk_oversampling = np.cumsum(g_t) * dt_oversampling
@@ -52,8 +52,10 @@ class ChannelEstimate():
 
         # Для АБГШ c_0 - импульсная характеристика
         h = c_0_trunc[::oversampling]
+        E_h = np.sum(np.abs(h)**2)
+        h_norm = h / np.sqrt(E_h)
 
-        return h
+        return h_norm
 
     #def h_rayleigh(self, rx_burst, tx_burst):
         L_sps = self.L * self.sps
