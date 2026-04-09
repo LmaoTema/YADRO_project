@@ -28,15 +28,16 @@ class GMSKDetector:
     def calc_increment(self, rhh):
         # Определяем влияние предыдущих бит для каждого состояния
         # C учетом деротации (+ - - +)
+
         increment = np.zeros(16)
-        increment[0] = rhh[4].real + rhh[3].real + rhh[2].real + rhh[1].real
-        increment[1] = rhh[4].real + rhh[3].real + rhh[2].real - rhh[1].real
-        increment[2] = rhh[4].real + rhh[3].real - rhh[2].real + rhh[1].real
-        increment[3] = rhh[4].real + rhh[3].real - rhh[2].real - rhh[1].real
-        increment[4] = rhh[4].real - rhh[3].real + rhh[2].real + rhh[1].real
-        increment[5] = rhh[4].real - rhh[3].real + rhh[2].real - rhh[1].real
-        increment[6] = rhh[4].real - rhh[3].real - rhh[2].real + rhh[1].real
-        increment[7] = rhh[4].real - rhh[3].real - rhh[2].real - rhh[1].real
+        increment[0] = rhh[4].real - rhh[3].imag - rhh[2].real + rhh[1].imag
+        increment[1] = rhh[4].real - rhh[3].imag - rhh[2].real - rhh[1].imag
+        increment[2] = rhh[4].real - rhh[3].imag + rhh[2].real + rhh[1].imag
+        increment[3] = rhh[4].real - rhh[3].imag + rhh[2].real - rhh[1].imag
+        increment[4] = rhh[4].real + rhh[3].imag - rhh[2].real + rhh[1].imag
+        increment[5] = rhh[4].real + rhh[3].imag - rhh[2].real - rhh[1].imag
+        increment[6] = rhh[4].real + rhh[3].imag + rhh[2].real + rhh[1].imag
+        increment[7] = rhh[4].real + rhh[3].imag + rhh[2].real - rhh[1].imag
         increment[8] = - increment[7]
         increment[9] = - increment[6]
         increment[10] = - increment[5]
@@ -45,22 +46,6 @@ class GMSKDetector:
         increment[13] = - increment[2]
         increment[14] = - increment[1]
         increment[15] = - increment[0]
-        # increment[0] = rhh[4].real - rhh[3].imag - rhh[2].real + rhh[1].imag
-        # increment[1] = rhh[4].real - rhh[3].imag - rhh[2].real - rhh[1].imag
-        # increment[2] = rhh[4].real - rhh[3].imag + rhh[2].real + rhh[1].imag
-        # increment[3] = rhh[4].real - rhh[3].imag + rhh[2].real - rhh[1].imag
-        # increment[4] = rhh[4].real + rhh[3].imag - rhh[2].real + rhh[1].imag
-        # increment[5] = rhh[4].real + rhh[3].imag - rhh[2].real - rhh[1].imag
-        # increment[6] = rhh[4].real + rhh[3].imag + rhh[2].real + rhh[1].imag
-        # increment[7] = rhh[4].real + rhh[3].imag + rhh[2].real - rhh[1].imag
-        # increment[8] = - increment[7]
-        # increment[9] = - increment[6]
-        # increment[10] = - increment[5]
-        # increment[11] = - increment[4]
-        # increment[12] = - increment[3]
-        # increment[13] = - increment[2]
-        # increment[14] = - increment[1]
-        # increment[15] = - increment[0]
 
         return increment
 
@@ -79,14 +64,13 @@ class GMSKDetector:
         sign_rotate = 1
 
         while sample_nr < samples_num:
-            
+
             if (sample_nr % 2) == 0:
                 input_symbol =  sign_rotate * sampled_signal[sample_nr].imag
             else:
                 sign_rotate = - sign_rotate
                 input_symbol =  sign_rotate * sampled_signal[sample_nr].real
 
-            # в итоге инвертированный знак. может и инкременты поменять
             for i in range(8):
                 pm_candidate1 = old_path_metrics[i] + input_symbol - increment[i]
                 pm_candidate2 = old_path_metrics[i + 8] + input_symbol - increment[i + 8]
@@ -200,7 +184,6 @@ class GMSKDetector:
                 else:
                     rhh = self.calc_rhh(h[b])
                     increment = self.calc_increment(rhh)
-                    # increment = np.zeros(16)
         
             start_idx = b * samples_per_burst
             burst = complex_signal[start_idx : start_idx + 148 * sps]
