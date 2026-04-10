@@ -155,25 +155,7 @@ class RayleighMultipathChannel:
     def reset(self):
         for fader in self._faders:
             fader.reset()
-    
-    def _fractional_delay_filter(self, mu):
 
-        half = self.L // 2
-        n = np.arange(-half, half + 1, dtype=float)
-
-        h = np.sinc(n - mu)
-        h *= np.hamming(len(h))
-        h /= np.sum(h)
-
-        return h.astype(np.float64)
-
-    def _apply_fractional_delay(self, x, mu):
-        if np.isclose(mu, 0.0):
-            return x.copy()
-
-        h = self._fractional_delay_filter(mu)
-        return np.convolve(x, h, mode="full")
-    
     def process(self, x):
         x = np.asarray(x, dtype = np.complex128)
         N = len(x)

@@ -3,7 +3,7 @@ from transmitter.channel_coder.utils import MSC_PARAMS
 
 simulation_params = {
     "channel_type": "TCHFS",
-    "channel_model": "awgn",    # "awgn" / "rayleigh_single" / "rayleigh_multipath"
+    "channel_model": "rayleigh_single",    # "awgn" / "rayleigh_single" / "rayleigh_multipath"
     "sweep_mode": "snr"         # "prx"/"snr"
 }
 
@@ -90,6 +90,6 @@ channel_params = {
   
     "profile": "TU",        # TU / RA / HT
     "sample_rate": 1e6,
-    "doppler": 50,
+    "doppler": 100,
 }
 

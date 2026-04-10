@@ -48,41 +48,59 @@ class AWGNChannel():
             * noise_factor
         )
     
-    def add_noise_by_snr(self, x, snr_db):
+    def get_noise_power_dbm(self):
+        return self.watt_to_dbm(self.get_noise_power_watt())
+    
+    def scale_signal_to_power(self, x, target_power_dbm):
         x = np.asarray(x, dtype = np.complex128)
+        
+        current_power = np.mean(np.abs(x) ** 2)
+        if current_power <= 0:
+            raise ValueError("Signal power is zero, cannot scale")
+        
+        target_power_watt = self.dbm_to_watt(float(target_power_dbm))
+        scale = np.sqrt(target_power_watt / current_power)
+        
+        return x * scale
+    
+    def _process_prx_mode(self, x, signal_power = None):
+        x = np.asarray(x, dtype = np.complex128)
+        
+        target_power_dbm = signal_power if signal_power is not None else self.signal_power
+        if target_power_dbm is None:
+            raise ValueError("For P_rx mode, signal_power must be provided.")
+        
+        x = self.scale_signal_to_power(x, target_power_dbm)
 
-        signal_power = np.mean(np.abs(x) ** 2)
-        if signal_power <= 0:
-            raise ValueError("Signal power is zero, cannot add noise.")
-
-        snr_linear = self.db_to_linear(float(snr_db))
-        noise_power = signal_power / snr_linear
-
+        noise_power = self.get_noise_power_watt()
         noise = np.sqrt(noise_power / 2.0) * (
             np.random.randn(*x.shape) + 1j * np.random.randn(*x.shape)
         )
+
         return x + noise
-    
-    def _process_prx_mode(self, x, signal_power=None):
+
+    def _process_snr_mode(self, x, snr_db = None):
         x = np.asarray(x, dtype = np.complex128)
-
-        prx_dbm = signal_power if signal_power is not None else self.signal_power
-        if prx_dbm is None:
-            raise ValueError("For P_rx mode, signal_power must be provided.")
-
-        noise_power_dbm = self.get_noise_power_dbm()
-        snr_db = float(prx_dbm) - noise_power_dbm
-
-        return self.add_noise_by_snr(x, snr_db)
-
-    def _process_snr_mode(self, x, snr_db=None):
-        x = np.asarray(x, dtype = np.complex128)
-
+       
         snr_db_used = snr_db if snr_db is not None else self.snr_db
         if snr_db_used is None:
-            raise ValueError("For SNR mode, snr_db must be provided.")
+            raise ValueError(
+                "For SNR mode, snr_db must be provided."
+            )
 
-        return self.add_noise_by_snr(x, snr_db_used)
+        noise_power_watt = self.get_noise_power_watt()
+        noise_power_dbm = self.watt_to_dbm(noise_power_watt)
+        
+        target_signal_power_dbm = noise_power_dbm + float(snr_db_used)
+        
+        x = self.scale_signal_to_power(x, target_signal_power_dbm)
+        
+        noise = np.sqrt(noise_power_watt / 2.0) * (
+            np.random.randn(*x.shape) + 1j * np.random.randn(*x.shape)
+        )
+        
+        return x + noise
+        
     def process(self, x, signal_power = None, snr_db = None):
         x = np.asarray(x, dtype = np.complex128)
 
