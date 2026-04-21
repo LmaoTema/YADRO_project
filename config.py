@@ -4,7 +4,7 @@ from transmitter.channel_coder.utils import MSC_PARAMS
 simulation_params = {
     "channel_type": "TCHFS",
     "channel_model": "awgn",    # "awgn" / "rayleigh_single" / "rayleigh_multipath"
-    "sweep_mode": "prx",        # "prx"/"snr"
+    "sweep_mode": "snr",        # "prx"/"snr"
     "processing_mode": "None"   # "None/"Half"/"Full"    
 }
 
@@ -83,7 +83,7 @@ equalizer_params = {
 }
 
 channel_params = {
-    "snr_db": 20.0, 
+    
     "temperature": 290.0,       # [К]
     "noise_figure": 7.0,        # [db]
     "bandwidth": 200e3,         # [Hz]
