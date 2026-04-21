@@ -7,7 +7,7 @@ class ChannelEstimate():
         self.BT = modulation_params.get("BT", 0.3)
         self.T = modulation_params.get("T", 3.69e-6)
         self.sps = modulation_params.get("sps", 4)
-        self.gaus_duration = modulation_params.get("gaus_duration", 3)
+        self.gaus_duration = modulation_params.get("gaus_duration", 4)
         self.rect_duration = modulation_params.get("rect_duration", 1)
         self.L = (self.gaus_duration + self.rect_duration)
 
@@ -48,10 +48,8 @@ class ChannelEstimate():
             for j in range(L):
                 c_0[i] *= s[i + j * sps_oversampling]
 
-        c_0_trunc = c_0[int(sps_oversampling / 2) : - int(sps_oversampling / 2)]
-
         # Для АБГШ c_0 - импульсная характеристика
-        h = c_0_trunc[::oversampling]
+        h = c_0[::oversampling]
         E_h = np.sum(np.abs(h)**2)
         h_norm = h / np.sqrt(E_h)
 

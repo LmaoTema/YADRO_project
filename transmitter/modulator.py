@@ -30,9 +30,8 @@ class GMSKModulation:
         self.BT = params.get("BT", 0.3)
         self.T = params.get("T", 3.69e-6)
         self.sps = params.get("sps", 4)
-        self.dt = self.T / self.sps
         self.h = params.get("h", 0.5)
-        self.gaus_duration = params.get("gaus_duration", 3)
+        self.gaus_duration = params.get("gaus_duration", 4)
         self.rect_duration = params.get("rect_duration", 1)
 
         return
@@ -78,12 +77,9 @@ class GMSKModulation:
 
     def calc_phase(self, alpha, q_gmsk):
         h = self.h
-        dt = self.dt
         sps = self.sps
         gaus_duration = self.gaus_duration
         rect_duration = self.rect_duration
-
-        alpha_repeat = np.repeat(alpha, sps)
 
         num_bits = alpha.size
         phi = np.zeros(num_bits * sps + q_gmsk.size - sps)
@@ -99,7 +95,7 @@ class GMSKModulation:
 
         # Сдвиг, чтобы изменению символа соответствовало изменение фазы
         shift = (gaus_duration + rect_duration) / 2 - 0.5
-        phi_shift = phi[int(shift * sps) : int(shift * sps) + alpha_repeat.size]
+        phi_shift = phi[int(shift * sps) : - int(shift * sps)]
 
         return phi_shift
 
