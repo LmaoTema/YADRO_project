@@ -6,17 +6,16 @@ class GMSKDetector:
         self.BT = params.get("BT", 0.3)
         self.T = params.get("T", 3.69e-6)
         self.sps = params.get("sps", 4)
-        self.dt = self.T / self.sps
         self.h = params.get("h", 0.5)
-        self.gaus_duration = params.get("gaus_duration", 3)
+        self.gaus_duration = params.get("gaus_duration", 4)
         self.rect_duration = params.get("rect_duration", 1)
         self.type_demod = params.get("type_demod", "diff_phase") # diff_phase / vit_hard / vit_soft 
 
         self.mf_is_working = block_params["matched_filter"]["is_working"]
 
     def calc_rhh(self, h):
-        rhh_full = np.convolve(h, np.conj(h))
-        center_idx = h.size
+        rhh_full = np.convolve(h, np.conj(h[::-1]))
+        center_idx = h.size - 1
         rhh = rhh_full[center_idx :: - self.sps]
 
         return rhh
