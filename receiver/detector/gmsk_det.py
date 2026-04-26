@@ -6,22 +6,17 @@ class GMSKDetector:
         self.BT = params.get("BT", 0.3)
         self.T = params.get("T", 3.69e-6)
         self.sps = params.get("sps", 4)
-        self.dt = self.T / self.sps
         self.h = params.get("h", 0.5)
         self.gaus_duration = params.get("gaus_duration", 4)
         self.rect_duration = params.get("rect_duration", 1)
         self.type_demod = params.get("type_demod", "diff_phase") # diff_phase / vit_hard / vit_soft 
 
-        self.mf_is_working = block_params["matched filter"]["is_working"]
+        self.mf_is_working = block_params["matched_filter"]["is_working"]
 
     def calc_rhh(self, h):
-        n = np.arange(h.size)
-        # Разобраться с инкрементами. Надо ли вращать самостоятельно
-        # h_complex = h * (1j**(n / self.sps))
-        h_complex = h
-        rhh_full = np.convolve(h_complex, np.conj(h_complex[::-1]))
-        center_idx = h_complex.size - 1
-        rhh = rhh_full[center_idx :: self.sps]
+        rhh_full = np.convolve(h, np.conj(h[::-1]))
+        center_idx = h.size - 1
+        rhh = rhh_full[center_idx :: - self.sps]
 
         return rhh
 
@@ -46,6 +41,24 @@ class GMSKDetector:
         increment[13] = - increment[2]
         increment[14] = - increment[1]
         increment[15] = - increment[0]
+
+        # increment = np.zeros(16)
+        # increment[0] = rhh[4].real + rhh[3].imag + rhh[2].real + rhh[1].imag
+        # increment[1] = rhh[4].real + rhh[3].imag + rhh[2].real - rhh[1].imag
+        # increment[2] = rhh[4].real + rhh[3].imag - rhh[2].real + rhh[1].imag
+        # increment[3] = rhh[4].real + rhh[3].imag - rhh[2].real - rhh[1].imag
+        # increment[4] = rhh[4].real - rhh[3].imag + rhh[2].real + rhh[1].imag
+        # increment[5] = rhh[4].real - rhh[3].imag + rhh[2].real - rhh[1].imag
+        # increment[6] = rhh[4].real - rhh[3].imag - rhh[2].real + rhh[1].imag
+        # increment[7] = rhh[4].real - rhh[3].imag - rhh[2].real - rhh[1].imag
+        # increment[8] = - increment[7]
+        # increment[9] = - increment[6]
+        # increment[10] = - increment[5]
+        # increment[11] = - increment[4]
+        # increment[12] = - increment[3]
+        # increment[13] = - increment[2]
+        # increment[14] = - increment[1]
+        # increment[15] = - increment[0]
 
         return increment
 
@@ -135,13 +148,21 @@ class GMSKDetector:
             sample_nr -= 1
             paths_difference = trans_table[sample_nr][curr_state]
             
-            if (self.type_demod == "vit_hard"):
-                if paths_difference > 0:
-                    prev_state = state_transfer[curr_state][1]
-                else:
-                    prev_state = state_transfer[curr_state][0]
+            hard_decision = (curr_state % 2) ^ 1
 
-                bits[sample_nr] = (curr_state % 2) ^ 1
+            if (self.type_demod == "vit_hard"):
+                bits[sample_nr] = hard_decision     
+            elif (self.type_demod == "vit_soft"):
+                confidence = np.abs(paths_difference)
+                if hard_decision == 0:
+                    bits[sample_nr] = confidence
+                else:
+                     bits[sample_nr] = - confidence
+
+            if paths_difference > 0:
+                prev_state = state_transfer[curr_state][1]
+            else:
+                prev_state = state_transfer[curr_state][0]
 
             curr_state = prev_state
 
@@ -184,7 +205,8 @@ class GMSKDetector:
                 else:
                     rhh = self.calc_rhh(h[b])
                     increment = self.calc_increment(rhh)
-        
+                    # increment = np.zeros(16)
+                    
             start_idx = b * samples_per_burst
             burst = complex_signal[start_idx : start_idx + 148 * sps]
 
@@ -193,7 +215,7 @@ class GMSKDetector:
                 all_bits.append(burst_bits)
 
             elif self.type_demod in ["vit_soft", "vit_hard"]:
-                sampled_burst = burst[self.sps - 1:: self.sps]
+                sampled_burst = burst[self.sps - 1 :: self.sps]
 
                 trans_table, old_path_metrics = self.calc_metric(increment, sampled_burst, start_state=0)
 

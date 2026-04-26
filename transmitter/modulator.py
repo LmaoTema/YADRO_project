@@ -30,7 +30,6 @@ class GMSKModulation:
         self.BT = params.get("BT", 0.3)
         self.T = params.get("T", 3.69e-6)
         self.sps = params.get("sps", 4)
-        self.dt = self.T / self.sps
         self.h = params.get("h", 0.5)
         self.gaus_duration = params.get("gaus_duration", 4)
         self.rect_duration = params.get("rect_duration", 1)
@@ -41,9 +40,11 @@ class GMSKModulation:
         if bits.size % 148 != 0:
             raise ValueError("Количество модуляционных бит должно быть кратным 148")
 
+        # Создаем сдвинутую на 1 отсчет последовательность бит 
         d_prev = np.ones(bits.size, dtype=int)
         d_prev[1:] = bits[:-1]
 
+        # Диф.кодирование
         d_curr = bits ^ d_prev
         alpha = 1 - 2 * d_curr
 
@@ -64,13 +65,16 @@ class GMSKModulation:
         t_h = np.arange(-gaus_duration * (T / 2), gaus_duration * (T / 2), dt_oversampling)
         t_rect = np.arange(-rect_duration * (T / 2), rect_duration * (T / 2), dt_oversampling)
 
+        # Формируем гауссовский и прямоугольный импульсы
         h_t = np.exp(-(t_h**2) / (2 * (delta**2) * (T**2))) / (
             np.sqrt(2 * np.pi) * delta * T
         )
         rect = np.ones(t_rect.size) / T
 
+        # Формирующий импульс
         g_t = np.convolve(h_t, rect) * dt_oversampling
 
+        # Интеграл формирующего импульса
         q_gmsk_oversampling = np.cumsum(g_t) * dt_oversampling
         q_gmsk = q_gmsk_oversampling[::oversampling]
 
@@ -78,40 +82,29 @@ class GMSKModulation:
 
     def calc_phase(self, alpha, q_gmsk):
         h = self.h
-        dt = self.dt
         sps = self.sps
         gaus_duration = self.gaus_duration
         rect_duration = self.rect_duration
 
-        alpha_repeat = np.repeat(alpha, sps)
-
         num_bits = alpha.size
         phi = np.zeros(num_bits * sps + q_gmsk.size - sps)
 
-        #  phase accumulation
         for i in range(num_bits):
             alpha_i = alpha[i]
             start_idx = i * sps
 
             phi[start_idx : start_idx + q_gmsk.size] += alpha_i * np.pi * h * q_gmsk
 
+            # Прибавляем итоговое накопленное значение ко всему массиву
             phase_step = alpha_i * np.pi * h
             phi[start_idx + q_gmsk.size :] += phase_step
 
-        # shift to synchronization with the modulation symbol changes
-        # an additional shift of 0.5 need to move to the center of the bit 
+        # Убираем задержку на 2T, вносимую гауссовским филльтром
+        # Сдвиг на 1 отсчет, чтобы пик текущего символа был в конце соответствующего символьного интервала 
         shift = (gaus_duration + rect_duration) / 2 - 0.5
-        phi = phi[int(shift * sps) : int(shift * sps) + alpha_repeat.size]
+        phi_shift = phi[int(shift * sps) + 1 : - int(shift * sps) + 1]
 
-        return phi
-
-    def calc_signal(self, phi):
-        dt = self.dt
-
-        t = np.arange(phi.size) * dt
-        x_t = np.exp(1j * phi)
-
-        return x_t
+        return phi_shift
 
     def process_mod(self, bits):
         
@@ -126,18 +119,20 @@ class GMSKModulation:
         guard_period = np.zeros(8 * self.sps, dtype=complex)
         gp_len = 0
         for i in range(num_bursts):
+            # Вырезаем из потока интересующий пакет (без защитного интервала)
             burst = bits[gp_len + i*active_size : gp_len + (i+1)*active_size]
             gp_len += 8
 
+            # Модуляция
             alpha = self.differential_encoding(burst)
             phi = self.calc_phase(alpha, q_gmsk)
-            signal = self.calc_signal(phi)
+            signal_envelope = np.exp(1j * phi)
             
-            all_signals.append(signal)
+            # Добавляем сигнал и защитный интервал
+            all_signals.append(signal_envelope)
             all_signals.append(guard_period)
 
         return np.concatenate(all_signals)
-
 
 
 class PSKModulation:

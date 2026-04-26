@@ -3,8 +3,9 @@ from transmitter.channel_coder.utils import MSC_PARAMS
 
 simulation_params = {
     "channel_type": "TCHFS",
-    "channel_model": "rayleigh_single",    # "awgn" / "rayleigh_single" / "rayleigh_multipath"
-    "sweep_mode": "snr"         # "prx"/"snr"
+    "channel_model": "awgn",    # "awgn" / "rayleigh_single" / "rayleigh_multipath"
+    "sweep_mode": "snr",        # "prx"/"snr"
+    "processing_mode": "None"   # "None/"Half"/"Full"    
 }
 
 block_params = {
@@ -13,12 +14,12 @@ block_params = {
     "interleaver":    {"is_working": True},
     "modulation":     {"is_working": True},
     "channel":        {"is_working": True},
-    "matched filter": {"is_working": False},
-    "equalizer":      {"is_working": False},
+    "matched_filter": {"is_working": True},
+    "equalizer":      {"is_working": True},
 }
 
 BER = {
-    "h2dB_init": 0.0,
+    "h2dB_init": -5,
     "h2dB_init_step": 0.4,
     "h2dB_min_step": 0.1,
     "h2dB_max_step": 1.6,
@@ -82,7 +83,7 @@ equalizer_params = {
 }
 
 channel_params = {
-    "snr_db": 20.0, 
+    
     "temperature": 290.0,       # [К]
     "noise_figure": 7.0,        # [db]
     "bandwidth": 200e3,         # [Hz]
