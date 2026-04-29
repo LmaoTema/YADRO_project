@@ -94,16 +94,6 @@ class GMSKDetector:
             new_path_metrics = old_path_metrics
             old_path_metrics = tmp
 
-            
-            print('______________________')
-            print('number bit = ', sample_nr)
-            for i in range (16):
-                print('state = ', i, 'metric:', old_path_metrics[i])
-            
-            if sample_nr == 9:
-                stop = 0
-
-
             sample_nr += 1
 
         return trans_table, old_path_metrics
