@@ -1,5 +1,4 @@
 import numpy as np
-from .vit_detector_osmo import calc_increment_osmo, calc_metric_osmo, find_best_stop_state_osmo, traceback_osmo
 
 class GMSKDetector:
     def __init__(self, params, block_params):
@@ -202,7 +201,6 @@ class GMSKDetector:
                 else:
                     rhh = self.calc_rhh(h[b])
                     increment = self.calc_increment(rhh)
-                    # increment = np.zeros(16)
 
                 # Берем отсчеты на конце символьного интервала
                 sampled_burst = burst[self.sps - 1 :: self.sps]
