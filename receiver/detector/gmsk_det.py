@@ -148,7 +148,7 @@ class GMSKDetector:
             sample_nr -= 1
             paths_difference = trans_table[sample_nr][curr_state]
             
-            hard_decision = (curr_state % 2) ^ 1
+            hard_decision = curr_state % 2
 
             if (self.type_demod == "vit_hard"):
                 bits[sample_nr] = hard_decision     
