@@ -71,8 +71,8 @@ class GMSKDetector:
             
             #  Расчет метрик для всех возможных состояний на текущем отсчете
             for i in range(8):
-                pm_candidate1 = old_path_metrics[i] + 2 * input_symbol - increment[i]
-                pm_candidate2 = old_path_metrics[i + 8] + 2 * input_symbol - increment[i + 8]
+                pm_candidate1 = old_path_metrics[i] + input_symbol - increment[i]
+                pm_candidate2 = old_path_metrics[i + 8] + input_symbol - increment[i + 8]
                 paths_difference = pm_candidate2 - pm_candidate1
                 if paths_difference < 0:
                     new_path_metrics[2 * i] = pm_candidate1
@@ -80,8 +80,8 @@ class GMSKDetector:
                     new_path_metrics[2 * i] = pm_candidate2
                 trans_table[sample_nr][2 * i] = paths_difference
 
-                pm_candidate1 = old_path_metrics[i] - 2 * input_symbol + increment[i]
-                pm_candidate2 = old_path_metrics[i + 8] - 2 * input_symbol + increment[i + 8]
+                pm_candidate1 = old_path_metrics[i] - input_symbol + increment[i]
+                pm_candidate2 = old_path_metrics[i + 8] - input_symbol + increment[i + 8]
                 paths_difference = pm_candidate2 - pm_candidate1
                 if paths_difference < 0:
                     new_path_metrics[2 * i + 1] = pm_candidate1
