@@ -22,7 +22,8 @@ class GMSKDetector:
 
     def calc_increment(self, rhh):
         # Определяем влияние предыдущих бит для каждого состояния
-        # C учетом деротации (+ - - +)
+        # Учетом деротации:
+        # [+Im(s), -Re(s), -Im(s), +Re(s)] = [s*j^(-1), s*j^(-2), s*j^(-3), s*j^(-4)]
 
         increment = np.zeros(16)
         increment[0] = rhh[4].real - rhh[3].imag - rhh[2].real + rhh[1].imag
@@ -42,24 +43,6 @@ class GMSKDetector:
         increment[14] = - increment[1]
         increment[15] = - increment[0]
 
-        # increment = np.zeros(16)
-        # increment[0] = rhh[4].real + rhh[3].imag + rhh[2].real + rhh[1].imag
-        # increment[1] = rhh[4].real + rhh[3].imag + rhh[2].real - rhh[1].imag
-        # increment[2] = rhh[4].real + rhh[3].imag - rhh[2].real + rhh[1].imag
-        # increment[3] = rhh[4].real + rhh[3].imag - rhh[2].real - rhh[1].imag
-        # increment[4] = rhh[4].real - rhh[3].imag + rhh[2].real + rhh[1].imag
-        # increment[5] = rhh[4].real - rhh[3].imag + rhh[2].real - rhh[1].imag
-        # increment[6] = rhh[4].real - rhh[3].imag - rhh[2].real + rhh[1].imag
-        # increment[7] = rhh[4].real - rhh[3].imag - rhh[2].real - rhh[1].imag
-        # increment[8] = - increment[7]
-        # increment[9] = - increment[6]
-        # increment[10] = - increment[5]
-        # increment[11] = - increment[4]
-        # increment[12] = - increment[3]
-        # increment[13] = - increment[2]
-        # increment[14] = - increment[1]
-        # increment[15] = - increment[0]
-
         return increment
 
     def calc_metric(self, increment, sampled_signal, start_state):
@@ -73,20 +56,23 @@ class GMSKDetector:
         trans_table = np.zeros((samples_num, 16))
 
         sample_nr = 0
-        # Учет деротации (+ - - +)
+        # Знак для деротации:
+        # [+Im(s), -Re(s), -Im(s), +Re(s)] = [s*j^(-1), s*j^(-2), s*j^(-3), s*j^(-4)]
         sign_rotate = 1
 
         while sample_nr < samples_num:
-
+            
+            # Деротация
             if (sample_nr % 2) == 0:
                 input_symbol =  sign_rotate * sampled_signal[sample_nr].imag
             else:
                 sign_rotate = - sign_rotate
                 input_symbol =  sign_rotate * sampled_signal[sample_nr].real
-
+            
+            #  Расчет метрик для всех возможных состояний на текущем отсчете
             for i in range(8):
-                pm_candidate1 = old_path_metrics[i] + input_symbol - increment[i]
-                pm_candidate2 = old_path_metrics[i + 8] + input_symbol - increment[i + 8]
+                pm_candidate1 = old_path_metrics[i] + 2 * input_symbol - increment[i]
+                pm_candidate2 = old_path_metrics[i + 8] + 2 * input_symbol - increment[i + 8]
                 paths_difference = pm_candidate2 - pm_candidate1
                 if paths_difference < 0:
                     new_path_metrics[2 * i] = pm_candidate1
@@ -94,8 +80,8 @@ class GMSKDetector:
                     new_path_metrics[2 * i] = pm_candidate2
                 trans_table[sample_nr][2 * i] = paths_difference
 
-                pm_candidate1 = old_path_metrics[i] - input_symbol + increment[i]
-                pm_candidate2 = old_path_metrics[i + 8] - input_symbol + increment[i + 8]
+                pm_candidate1 = old_path_metrics[i] - 2 * input_symbol + increment[i]
+                pm_candidate2 = old_path_metrics[i + 8] - 2 * input_symbol + increment[i + 8]
                 paths_difference = pm_candidate2 - pm_candidate1
                 if paths_difference < 0:
                     new_path_metrics[2 * i + 1] = pm_candidate1
@@ -103,9 +89,20 @@ class GMSKDetector:
                     new_path_metrics[2 * i + 1] = pm_candidate2
                 trans_table[sample_nr][2 * i + 1] = paths_difference
 
+            # Обновление путей
             tmp = new_path_metrics
             new_path_metrics = old_path_metrics
             old_path_metrics = tmp
+
+            
+            print('______________________')
+            print('number bit = ', sample_nr)
+            for i in range (16):
+                print('state = ', i, 'metric:', old_path_metrics[i])
+            
+            if sample_nr == 9:
+                stop = 0
+
 
             sample_nr += 1
 
@@ -199,14 +196,7 @@ class GMSKDetector:
         all_bits = []
 
         for b in range(num_bursts):
-            if self.type_demod in ["vit_soft", "vit_hard"]:
-                if self.mf_is_working == False:
-                    increment = np.zeros(16)
-                else:
-                    rhh = self.calc_rhh(h[b])
-                    increment = self.calc_increment(rhh)
-                    # increment = np.zeros(16)
-                    
+ 
             start_idx = b * samples_per_burst
             burst = complex_signal[start_idx : start_idx + 148 * sps]
 
@@ -215,12 +205,22 @@ class GMSKDetector:
                 all_bits.append(burst_bits)
 
             elif self.type_demod in ["vit_soft", "vit_hard"]:
+                # Расчет инкрементов - ИХ на выходе СФ x(t). Используется для определения влияния соседних символов
+                # Если СФ выключен, то инкременты не используем
+                if self.mf_is_working == False:
+                    increment = np.zeros(16)
+                else:
+                    rhh = self.calc_rhh(h[b])
+                    increment = self.calc_increment(rhh)
+                    # increment = np.zeros(16)
+
+                # Берем отсчеты на конце символьного интервала
                 sampled_burst = burst[self.sps - 1 :: self.sps]
-
+                # Строим решетку
                 trans_table, old_path_metrics = self.calc_metric(increment, sampled_burst, start_state=0)
-
+                # Находим наиболее вероятное последнее состояние 
                 best_stop_state = self.find_best_stop_state(old_path_metrics)
-
+                # Проходимся от конца к началу по выстроенной решетке
                 burst_bits = self.traceback(trans_table, best_stop_state)
 
                 all_bits.append(burst_bits)
