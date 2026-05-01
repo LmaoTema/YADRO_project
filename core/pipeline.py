@@ -1,5 +1,6 @@
 import numpy as np
 
+from channel.types import ChannelOutput
 
 class ProcessingMode:
     NONE = "None"
@@ -41,12 +42,18 @@ class Pipeline:
 
     def channel_pass(self, tx_signal):
         return self.channel.process(tx_signal)
-
+    
+    def _unwrap_channel_output(self, rx_signal):
+        if isinstance(rx_signal, ChannelOutput):
+            return rx_signal.signal, rx_signal.channel_state, rx_signal
+        return rx_signal, None, None
+    
     def rx(self, rx_signal, tx_signal=None):
-
+        rx_samples, channel_state, _ = self._unwrap_channel_output(rx_signal)
+        
         if self.mode == ProcessingMode.HALF:
 
-            llr = self.soft_llr_generator.process(rx_signal)
+            llr = self.soft_llr_generator.process(rx_samples)
 
             if self.combiner is not None:
                 llr = self.combiner.process(llr)
@@ -54,15 +61,15 @@ class Pipeline:
             decoded = self.decoder.process(llr)
 
             return decoded
-
+        
+        # Получаем оценку композитного канала
         h = self.estimator.process(rx_signal, tx_signal)
-
+        # Деротируем сигнал и пропускаем через СФ
         mf = self.matched_filter.process(rx_signal, h)
-
+        # Эквалайзер (Если работаем не по MLSE)
         eq = self.equalizer.process(mf, h)
-
+        # Детектор
         llr = self.detector.process(eq, h)  
-
 
         if self.mode == ProcessingMode.FULL:
 
