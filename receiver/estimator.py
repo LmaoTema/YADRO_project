@@ -122,7 +122,7 @@ class ChannelEstimate():
         
         return h
 
-    def process(self, rx_signal, tx_signal):
+    def process(self, rx_signal, tx_signal, channel_state = None):
         
         if self.channel_model == "awgn":
             h_est = self.h_awgn()
