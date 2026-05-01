@@ -13,7 +13,7 @@ block_params = {
     "interleaver":    {"is_working": True},
     "modulation":     {"is_working": True},
     "channel":        {"is_working": True},
-    "matched_filter": {"is_working": True},
+    "matched_filter": {"is_working": False},
     "equalizer":      {"is_working": False},
 }
 

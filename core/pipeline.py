@@ -63,9 +63,9 @@ class Pipeline:
             return decoded
         
         # Получаем оценку композитного канала
-        h = self.estimator.process(rx_signal, tx_signal)
+        h = self.estimator.process(rx_samples, tx_signal, channel_state = channel_state)
         # Деротируем сигнал и пропускаем через СФ
-        mf = self.matched_filter.process(rx_signal, h)
+        mf = self.matched_filter.process(rx_samples, h)
         # Эквалайзер (Если работаем не по MLSE)
         eq = self.equalizer.process(mf, h)
         # Детектор
